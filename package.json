@@ -1,0 +1,19 @@
+{
+  "name": "lcars-dashboard",
+  "version": "1.0.0",
+  "description": "LCARS-inspired personal ops dashboard — Railway + AI usage monitoring",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "node-cron": "^3.0.3",
+    "better-sqlite3": "^9.4.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

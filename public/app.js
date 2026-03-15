@@ -183,7 +183,7 @@ function renderServiceCards(topology, deployments, metrics) {
 
   if (!topology?.projects?.edges?.length) {
     grid.innerHTML = topology?.error
-      ? `<div class="error-msg">${topology.error}</div>`
+      ? `<div class="error-msg">${escHtml(topology.error)}</div>`
       : '<div class="not-configured">RAILWAY_API_TOKEN NOT CONFIGURED</div>';
     return;
   }

@@ -1,6 +1,6 @@
 import express from 'express';
 import { router as apiRouter } from './routes/api.js';
-import { startPollers } from './pollers/index.js';
+import { startPollers, stopPollers } from './pollers/index.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -31,7 +31,13 @@ app.get('/config', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+// Global Express error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+const server = app.listen(PORT, () => {
   console.log(`╔══════════════════════════════════════════╗`);
   console.log(`║  LCARS Dashboard :: ${TITLE.padEnd(20)} ║`);
   console.log(`║  Port: ${String(PORT).padEnd(33)} ║`);
@@ -39,6 +45,18 @@ app.listen(PORT, () => {
   console.log(`╚══════════════════════════════════════════╝`);
   startPollers();
 });
+
+const shutdown = () => {
+  console.log('Shutting down gracefully...');
+  stopPollers();
+  server.close(() => {
+    console.log('HTTP server closed.');
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10000); // force kill after 10s
+};
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);
 
 function getStardate() {
   // Fan-standard formula: (year - 2000) * 1000 + fractional day

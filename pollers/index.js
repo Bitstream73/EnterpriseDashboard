@@ -38,10 +38,20 @@ export async function startPollers() {
 
   console.log('[pollers] Initial fetch complete. Scheduling periodic polls...');
 
-  // Schedule periodic polls
-  cron.schedule(secsToCron(POLL_RAILWAY_SEC), runRailwayPoll);
-  cron.schedule(secsToCron(POLL_AI_SEC), runAIUsagePoll);
-  cron.schedule(secsToCron(POLL_PINECONE_SEC), pollPineconeStats);
+  // Schedule periodic polls — store task refs for graceful shutdown
+  const railwayTask   = cron.schedule(secsToCron(POLL_RAILWAY_SEC),  runRailwayPoll);
+  const aiTask        = cron.schedule(secsToCron(POLL_AI_SEC),        runAIUsagePoll);
+  const pineconeTask  = cron.schedule(secsToCron(POLL_PINECONE_SEC), pollPineconeStats);
+
+  pollerTasks.push(railwayTask, aiTask, pineconeTask);
 
   console.log(`[pollers] Railway: every ${POLL_RAILWAY_SEC}s | AI Usage: every ${POLL_AI_SEC}s | Pinecone: every ${POLL_PINECONE_SEC}s`);
+}
+
+// Track cron task handles so stopPollers() can clean up
+const pollerTasks = [];
+
+export function stopPollers() {
+  pollerTasks.forEach(task => task.stop());
+  console.log('[pollers] All cron tasks stopped.');
 }

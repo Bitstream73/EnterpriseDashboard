@@ -119,12 +119,11 @@ export async function pollDeployments() {
 
     const deploymentMap = {};
 
-    for (const { node: project } of topology.projects.edges) {
-      for (const { node: service } of (project.services?.edges ?? [])) {
-        try {
-          const data = await gql(DEPLOYMENTS_QUERY, {
-            input: { projectId: project.id, serviceId: service.id },
-          });
+    const deployTasks = topology.projects.edges.flatMap(({ node: project }) =>
+      (project.services?.edges ?? []).map(({ node: service }) =>
+        gql(DEPLOYMENTS_QUERY, {
+          input: { projectId: project.id, serviceId: service.id },
+        }).then(data => {
           const edges = data?.deployments?.edges ?? [];
           if (edges.length > 0) {
             const latest = edges[0].node;
@@ -136,11 +135,13 @@ export async function pollDeployments() {
               recentDeploys: edges.map(e => e.node),
             };
           }
-        } catch (err) {
+        }).catch(err => {
           console.warn(`[railway] deployments failed for service ${service.id}:`, err.message);
-        }
-      }
-    }
+        })
+      )
+    );
+
+    await Promise.allSettled(deployTasks);
 
     set('railway:deployments', deploymentMap, TTL_DEPLOYMENTS);
     console.log(`[railway] deployments cached: ${Object.keys(deploymentMap).length} services`);
@@ -198,21 +199,19 @@ export async function pollMetrics() {
     const endDate = new Date().toISOString();
     const startDate = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // last 1 hour
 
-    for (const { node: project } of topology.projects.edges) {
+    const metricsTasks = topology.projects.edges.flatMap(({ node: project }) => {
       const envId = project.environments?.edges?.[0]?.node?.id;
-      if (!envId) continue;
+      if (!envId) return [];
 
-      for (const { node: service } of (project.services?.edges ?? [])) {
-        try {
-          const data = await gql(METRICS_QUERY, {
-            environmentId: envId,
-            serviceId: service.id,
-            startDate,
-            endDate,
-            sampleRateSeconds: 300,
-            averagingWindowSeconds: 300,
-          });
-
+      return (project.services?.edges ?? []).map(({ node: service }) =>
+        gql(METRICS_QUERY, {
+          environmentId: envId,
+          serviceId: service.id,
+          startDate,
+          endDate,
+          sampleRateSeconds: 300,
+          averagingWindowSeconds: 300,
+        }).then(data => {
           const result = { cpu: null, memoryGB: null, networkRxGB: null, networkTxGB: null, diskGB: null };
 
           for (const metric of (data?.metrics ?? [])) {
@@ -227,11 +226,13 @@ export async function pollMetrics() {
           }
 
           metricsMap[service.id] = result;
-        } catch (err) {
+        }).catch(err => {
           console.warn(`[railway] metrics failed for service ${service.id}:`, err.message);
-        }
-      }
-    }
+        })
+      );
+    });
+
+    await Promise.allSettled(metricsTasks);
 
     set('railway:metrics', metricsMap, TTL_METRICS);
     console.log(`[railway] metrics cached: ${Object.keys(metricsMap).length} services`);

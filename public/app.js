@@ -46,13 +46,14 @@ const state = {
 
 // ─── Stardate ─────────────────────────────────────────────────────────────────
 function getStardate() {
+  // Fan-standard formula: ~26000-range for 2026
   const now = new Date();
   const year = now.getFullYear();
   const startOfYear = new Date(year, 0, 0);
   const diff = now - startOfYear;
   const dayOfYear = Math.floor(diff / 86400000);
   const daysInYear = (year % 4 === 0) ? 366 : 365;
-  const stardate = (year - 2323) * 1000 + (dayOfYear / daysInYear) * 1000;
+  const stardate = (year - 2000) * 1000 + (dayOfYear / daysInYear) * 1000;
   return stardate.toFixed(1);
 }
 

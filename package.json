@@ -5,10 +5,11 @@
   "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "dotenvx run -- node server.js",
     "dev": "node --watch server.js"
   },
   "dependencies": {
+    "@dotenvx/dotenvx": "^1.55.1",
     "express": "^4.21.0",
     "node-cron": "^3.0.3"
   },

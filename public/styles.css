@@ -783,3 +783,312 @@ html, body {
   .clock-panel .readout-value { font-size: 14px; }
   .clock-panel .readout-time { font-size: 12px; }
 }
+
+/* ─── Mobile LCARS header strip (hidden on desktop) ─── */
+.mobile-lcars-header {
+  display: none;
+}
+
+/* ─── Mobile / Portrait Phone (430px and below) ─────── */
+@media (max-width: 430px) {
+  /* Mobile LCARS header — decorative top strip */
+  .mobile-lcars-header {
+    display: flex;
+    align-items: center;
+    height: 48px;
+    background: var(--lcars-black);
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .mobile-lcars-cap {
+    width: 48px;
+    height: 48px;
+    background: var(--lcars-orange);
+    border-radius: var(--lcars-radius-cap) 0 0 0;
+    flex-shrink: 0;
+  }
+
+  .mobile-lcars-bar {
+    width: 20px;
+    height: 28px;
+    background: var(--lcars-orange);
+    flex-shrink: 0;
+  }
+
+  .mobile-lcars-title {
+    flex: 1;
+    padding: 0 12px;
+    font-family: 'Antonio', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    color: var(--lcars-orange);
+    text-transform: uppercase;
+    height: 28px;
+    line-height: 28px;
+    background: rgba(255, 136, 0, 0.06);
+    border-top: 2px solid var(--lcars-orange);
+    align-self: flex-end;
+  }
+
+  /* Allow scrolling on mobile */
+  html, body {
+    overflow: auto;
+    height: auto;
+    min-height: 100%;
+  }
+
+  /* Stack all three columns vertically */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  /* ── Sidebar becomes a top navigation bar ── */
+  #sidebar {
+    width: 100%;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  /* Hide decorative corner/bar top section — replace with compact header */
+  .sidebar-top,
+  .sidebar-bottom,
+  .lcars-sidebar-stripe {
+    display: none;
+  }
+
+  .sidebar-content {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  /* Horizontal scrollable nav */
+  .lcars-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 8px;
+    gap: 6px;
+    background: rgba(255, 136, 0, 0.08);
+    border-bottom: 3px solid var(--lcars-orange);
+    /* Prevent wrapping */
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Show nav labels again on mobile */
+  .nav-btn span {
+    display: inline;
+  }
+
+  .nav-btn {
+    flex-shrink: 0;
+    padding: 10px 16px;
+    min-height: 44px; /* Touch target */
+    font-size: 12px;
+    border-radius: var(--lcars-radius-cap);
+    text-align: center;
+    white-space: nowrap;
+    /* Left-cap style reset for horizontal */
+    border-radius: 22px;
+  }
+
+  /* Hide indicator blocks in sidebar on mobile */
+  .nav-spacer,
+  .nav-indicator {
+    display: none;
+  }
+
+  /* ── Main content full width ── */
+  #content {
+    width: 100%;
+    padding: 12px;
+    overflow: visible;
+  }
+
+  /* ── Right panel stacks below main content ── */
+  #right-panel {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    height: auto;
+    overflow: visible;
+    border-top: 3px solid var(--lcars-ice);
+    padding: 12px;
+    gap: 12px;
+  }
+
+  /* Hide the large decorative bars in right panel */
+  .right-top-bar,
+  .right-bottom-bar,
+  .right-divider {
+    display: none;
+  }
+
+  /* Clock, alerts, and quick-stats become side-by-side cards */
+  .clock-panel,
+  .alert-panel,
+  .quick-stats {
+    flex: 1;
+    min-width: 130px;
+    padding: 10px;
+    background: var(--lcars-dark-bg);
+    border: 1px solid rgba(153, 204, 255, 0.3);
+    border-radius: var(--lcars-radius-sm);
+  }
+
+  .readout-time {
+    font-size: 16px;
+  }
+
+  .readout-date {
+    font-size: 10px;
+  }
+
+  .quick-stats {
+    overflow-y: visible;
+  }
+
+  /* ── Panel headers ── */
+  .panel-header {
+    height: auto;
+    min-height: 36px;
+    flex-wrap: wrap;
+  }
+
+  .panel-cap {
+    width: 40px;
+    border-radius: var(--lcars-radius-cap) 0 0 var(--lcars-radius-cap);
+  }
+
+  .panel-title {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    min-height: 36px;
+  }
+
+  .panel-meta {
+    font-size: 10px;
+    padding: 0 8px;
+    min-height: 36px;
+    background: transparent;
+    white-space: normal;
+    word-break: break-all;
+  }
+
+  /* ── Services grid: single column ── */
+  .services-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* ── Deploy timeline: collapse columns ── */
+  .deploy-row {
+    grid-template-columns: 10px 1fr 60px;
+    gap: 8px;
+    padding: 8px;
+    font-size: 11px;
+  }
+
+  /* Hide the verbose meta column, keep dot + service + status */
+  .deploy-meta {
+    display: none;
+  }
+
+  .deploy-time {
+    display: none;
+  }
+
+  /* Re-layout remaining columns */
+  .deploy-row {
+    grid-template-columns: 10px 1fr auto;
+  }
+
+  /* ── Charts: full width, reasonable height ── */
+  .chart-container {
+    height: 220px;
+    padding: 10px;
+  }
+
+  /* ── Usage cards: full width stack ── */
+  .usage-summary-row {
+    flex-direction: column;
+  }
+
+  .usage-card {
+    min-width: unset;
+    width: 100%;
+  }
+
+  .readout-value {
+    font-size: 18px;
+  }
+
+  /* ── Pinecone stats: 2-col or single ── */
+  .pinecone-stats {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+  }
+
+  .pinecone-big-number {
+    font-size: 36px;
+  }
+
+  .pinecone-stat-card {
+    padding: 14px 10px;
+  }
+
+  /* ── System info cards: single column ── */
+  .system-info {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  /* ── Global font size bump for readability ── */
+  body {
+    font-size: 14px;
+  }
+
+  .metric-label { font-size: 12px; }
+  .metric-row   { font-size: 13px; }
+  .service-name { font-size: 14px; }
+
+  /* ── Touch target minimum sizes ── */
+  button,
+  .nav-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ─── Extra-small phones (320px) ─────────────────────── */
+@media (max-width: 350px) {
+  .panel-title {
+    font-size: 11px;
+    letter-spacing: 0.06em;
+  }
+
+  .pinecone-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .pinecone-big-number {
+    font-size: 28px;
+  }
+
+  #right-panel {
+    flex-direction: column;
+  }
+
+  .clock-panel,
+  .alert-panel,
+  .quick-stats {
+    min-width: unset;
+    width: 100%;
+  }
+}

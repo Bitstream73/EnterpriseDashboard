@@ -42,6 +42,8 @@ const state = {
   features: {},
   alerts: [],
   tokenChart: null,
+  deployHistoryChart: null,
+  openaiHistoryChart: null,
 };
 
 // ─── Stardate ─────────────────────────────────────────────────────────────────
@@ -679,6 +681,188 @@ async function updatePinecone() {
   if (el) el.textContent = `UPDATED ${new Date().toLocaleTimeString()}`;
 }
 
+// ─── History Charts ───────────────────────────────────────────────────────────
+
+function renderDeployHistoryChart(historyDays) {
+  const canvas = document.getElementById('deploy-history-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const labels   = historyDays.map(d => d.date.slice(5)); // MM-DD
+  const totals   = historyDays.map(d => d.total);
+
+  // Collect all unique projects across all days
+  const projectNames = [...new Set(
+    historyDays.flatMap(d => Object.keys(d.byProject ?? {}))
+  )];
+
+  const projectColors = [
+    COLORS.orange, COLORS.ice, COLORS.violet, COLORS.gold, COLORS.green,
+    COLORS.butterscotch, COLORS.almond, COLORS.tomato,
+  ];
+
+  const datasets = projectNames.length > 1
+    ? projectNames.map((name, i) => ({
+        label: name.toUpperCase(),
+        data: historyDays.map(d => d.byProject?.[name] ?? 0),
+        borderColor: projectColors[i % projectColors.length],
+        backgroundColor: 'transparent',
+        tension: 0.3,
+        pointRadius: 4,
+      }))
+    : [{
+        label: 'DEPLOYS',
+        data: totals,
+        borderColor: COLORS.orange,
+        backgroundColor: 'rgba(255,136,0,0.1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 4,
+      }];
+
+  if (state.deployHistoryChart) state.deployHistoryChart.destroy();
+
+  state.deployHistoryChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          labels: { color: COLORS.sunflower, font: { family: 'Antonio', size: 11 }, padding: 16 },
+        },
+        tooltip: {
+          backgroundColor: '#111111',
+          borderColor: COLORS.gold,
+          borderWidth: 1,
+          titleColor: COLORS.sunflower,
+          bodyColor: COLORS.sunflower,
+          titleFont: { family: 'Antonio' },
+          bodyFont: { family: 'Antonio' },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: COLORS.dim, font: { family: 'Antonio', size: 10 } },
+          grid: { color: 'rgba(255,170,0,0.08)' },
+        },
+        y: {
+          ticks: {
+            color: COLORS.dim,
+            font: { family: 'Antonio', size: 10 },
+            stepSize: 1,
+            precision: 0,
+          },
+          grid: { color: 'rgba(255,170,0,0.08)' },
+        },
+      },
+    },
+  });
+}
+
+function renderOpenAIHistoryChart(historyData) {
+  const canvas = document.getElementById('openai-history-chart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  if (!historyData?.available) {
+    // Draw placeholder
+    if (state.openaiHistoryChart) state.openaiHistoryChart.destroy();
+    state.openaiHistoryChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['NO DATA'],
+        datasets: [{ label: historyData?.reason ?? 'NOT CONFIGURED', data: [0], borderColor: COLORS.dim }],
+      },
+      options: { responsive: true, maintainAspectRatio: false },
+    });
+    return;
+  }
+
+  const days   = historyData.days ?? [];
+  const labels = days.map(d => d.date.slice(5));
+
+  if (state.openaiHistoryChart) state.openaiHistoryChart.destroy();
+
+  state.openaiHistoryChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'INPUT TOKENS',
+          data: days.map(d => d.input_tokens),
+          borderColor: COLORS.ice,
+          backgroundColor: 'rgba(153,204,255,0.08)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+        },
+        {
+          label: 'OUTPUT TOKENS',
+          data: days.map(d => d.output_tokens),
+          borderColor: COLORS.violet,
+          backgroundColor: 'rgba(204,153,255,0.06)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          labels: { color: COLORS.sunflower, font: { family: 'Antonio', size: 11 }, padding: 16 },
+        },
+        tooltip: {
+          backgroundColor: '#111111',
+          borderColor: COLORS.ice,
+          borderWidth: 1,
+          titleColor: COLORS.sunflower,
+          bodyColor: COLORS.sunflower,
+          titleFont: { family: 'Antonio' },
+          bodyFont: { family: 'Antonio' },
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${formatTokens(ctx.raw)}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          ticks: { color: COLORS.dim, font: { family: 'Antonio', size: 10 } },
+          grid: { color: 'rgba(153,204,255,0.08)' },
+        },
+        y: {
+          ticks: {
+            color: COLORS.dim,
+            font: { family: 'Antonio', size: 10 },
+            callback: (v) => formatTokens(v),
+          },
+          grid: { color: 'rgba(153,204,255,0.08)' },
+        },
+      },
+    },
+  });
+}
+
+async function updateHistory() {
+  const [railwayHistory, openaiHistory] = await Promise.all([
+    fetchJSON('/railway/history?days=7'),
+    fetchJSON('/openai/history?days=7'),
+  ]);
+
+  if (railwayHistory) renderDeployHistoryChart(railwayHistory);
+  if (openaiHistory !== null) renderOpenAIHistoryChart(openaiHistory);
+
+  const el = document.getElementById('history-last-updated');
+  if (el) el.textContent = `UPDATED ${new Date().toLocaleTimeString()}`;
+}
+
 // ─── System View ──────────────────────────────────────────────────────────────
 async function updateSystem() {
   const container = document.getElementById('system-info');
@@ -787,6 +971,7 @@ async function init() {
     updateAIUsage(),
     updatePinecone(),
     updateSystem(),
+    updateHistory(),
   ]);
 
   // Periodic polling
@@ -794,6 +979,7 @@ async function init() {
   setInterval(updateAIUsage,   POLL_AI_USAGE_MS);
   setInterval(updatePinecone,  POLL_PINECONE_MS);
   setInterval(updateSystem,    60_000);
+  setInterval(updateHistory,   POLL_AI_USAGE_MS); // same cadence as AI usage (5 min)
 
   console.log('[lcars] Dashboard online. Stardate:', getStardate());
 }

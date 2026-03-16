@@ -18,15 +18,15 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Config endpoint for frontend to read
+// Root /config alias — frontend hits this; /api/config handled in router
 app.get('/config', (req, res) => {
   res.json({
     title: TITLE,
     features: {
-      railway: !!process.env.RAILWAY_API_TOKEN,
+      railway:   !!process.env.RAILWAY_API_TOKEN,
       anthropic: !!process.env.ANTHROPIC_ADMIN_API_KEY,
-      openai: !!process.env.OPENAI_API_KEY,
-      pinecone: !!(process.env.PINECONE_API_KEY && process.env.PINECONE_INDEX_HOST),
+      openai:    !!process.env.OPENAI_API_KEY,
+      pinecone:  !!(process.env.PINECONE_API_KEY && process.env.PINECONE_INDEX_HOST),
     },
   });
 });

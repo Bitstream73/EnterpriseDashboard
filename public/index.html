@@ -37,6 +37,9 @@
           <button class="nav-btn" data-view="pinecone">
             <span>PINECONE</span>
           </button>
+          <button class="nav-btn" data-view="history">
+            <span>HISTORY</span>
+          </button>
           <button class="nav-btn" data-view="system">
             <span>SYSTEM</span>
           </button>
@@ -103,6 +106,26 @@
           <span class="panel-meta" id="pinecone-last-updated">—</span>
         </div>
         <div id="pinecone-stats" class="pinecone-stats"></div>
+      </section>
+
+      <!-- HISTORY VIEW -->
+      <section id="view-history" class="view">
+        <div class="panel-header">
+          <div class="panel-cap gold"></div>
+          <h2 class="panel-title">DEPLOYMENT HISTORY — 7 DAYS</h2>
+          <span class="panel-meta" id="history-last-updated">—</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="deploy-history-chart"></canvas>
+        </div>
+
+        <div class="panel-header sub">
+          <div class="panel-cap butterscotch"></div>
+          <h2 class="panel-title">OPENAI TOKEN USAGE — 7 DAYS</h2>
+        </div>
+        <div class="chart-container">
+          <canvas id="openai-history-chart"></canvas>
+        </div>
       </section>
 
       <!-- SYSTEM VIEW -->

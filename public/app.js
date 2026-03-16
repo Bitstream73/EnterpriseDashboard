@@ -844,13 +844,13 @@ function renderDeployHistoryChart(historyDays) {
       },
       scales: {
         x: {
-          ticks: { color: COLORS.dim, font: { family: 'Antonio', size: 10 } },
+          ticks: { color: COLORS.dim, font: { family: 'Antonio', size: 12 } },
           grid: { color: 'rgba(255,170,0,0.08)' },
         },
         y: {
           ticks: {
             color: COLORS.dim,
-            font: { family: 'Antonio', size: 10 },
+            font: { family: 'Antonio', size: 12 },
             stepSize: 1,
             precision: 0,
           },
@@ -954,6 +954,18 @@ async function updateHistory() {
     fetchJSON('/railway/history?days=7'),
     fetchJSON('/openai/history?days=7'),
   ]);
+
+  // Show OpenAI status message if unavailable
+  const oaiMsg = document.getElementById('openai-history-msg');
+  if (oaiMsg) {
+    if (!openaiHistory?.available) {
+      const reason = openaiHistory?.reason ?? 'OpenAI usage data unavailable';
+      oaiMsg.textContent = reason.length > 120 ? reason.slice(0, 120) + '…' : reason;
+      oaiMsg.style.display = 'block';
+    } else {
+      oaiMsg.style.display = 'none';
+    }
+  }
 
   if (railwayHistory) renderDeployHistoryChart(railwayHistory);
   if (openaiHistory !== null) renderOpenAIHistoryChart(openaiHistory);

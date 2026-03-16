@@ -1071,11 +1071,11 @@ html, body {
   }
 
   .readout-time {
-    font-size: 16px;
+    font-size: 18px;
   }
 
   .readout-date {
-    font-size: 10px;
+    font-size: 13px;
   }
 
   .quick-stats {
@@ -1095,13 +1095,13 @@ html, body {
   }
 
   .panel-title {
-    font-size: 12px;
+    font-size: 15px;
     letter-spacing: 0.1em;
     min-height: 36px;
   }
 
   .panel-meta {
-    font-size: 10px;
+    font-size: 13px;
     padding: 0 8px;
     min-height: 36px;
     background: transparent;
@@ -1119,8 +1119,8 @@ html, body {
   .deploy-row {
     grid-template-columns: 10px 1fr auto;
     gap: 8px;
-    padding: 8px;
-    font-size: 11px;
+    padding: 10px 8px;
+    font-size: 13px;
   }
 
   /* Hide verbose columns on mobile */
@@ -1129,7 +1129,8 @@ html, body {
   }
 
   .deploy-time {
-    display: none;
+    font-size: 12px;
+    display: block;
   }
 
   /* ── Charts: full width, reasonable height ── */
@@ -1174,12 +1175,17 @@ html, body {
 
   /* ── Global font size bump for readability ── */
   body {
-    font-size: 14px;
+    font-size: 15px;
   }
 
-  .metric-label { font-size: 12px; }
-  .metric-row   { font-size: 13px; }
-  .service-name { font-size: 14px; }
+  .metric-label { font-size: 14px; }
+  .metric-row   { font-size: 15px; }
+  .service-name { font-size: 16px; }
+  .deploy-svc   { font-size: 14px; }
+  .deploy-status { font-size: 13px; }
+  .readout-value { font-size: 20px; }
+  .service-status { font-size: 13px; }
+  .service-meta   { font-size: 13px; }
 
   /* ── Touch target minimum sizes ── */
   button,

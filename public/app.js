@@ -44,6 +44,13 @@ const state = {
   tokenChart: null,
   deployHistoryChart: null,
   openaiHistoryChart: null,
+  filters: {
+    hideRemoved: true,
+    hideEmptyEnv: false,
+  },
+  lastTopology: null,
+  lastDeployments: null,
+  lastMetrics: null,
 };
 
 // ─── Stardate ─────────────────────────────────────────────────────────────────
@@ -108,8 +115,8 @@ function getLast30Days() {
   return labels;
 }
 
-function addAlert(msg, level = 'warn') {
-  state.alerts.push({ msg, level, ts: Date.now() });
+function addAlert(msg, level = 'warn', projectId = null) {
+  state.alerts.push({ msg, level, ts: Date.now(), projectId });
   renderAlerts();
 }
 
@@ -148,8 +155,49 @@ function initNav() {
       btn.classList.add('active');
       const viewEl = document.getElementById(`view-${view}`);
       if (viewEl) viewEl.classList.add('active');
+      // Trigger history load when switching to history view
+      if (view === 'history') updateHistory();
     });
   });
+}
+
+// ─── Filters ──────────────────────────────────────────────────────────────────
+function initFilters() {
+  // Load from localStorage
+  try {
+    const saved = localStorage.getItem('lcars:filters');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      state.filters.hideRemoved = parsed.hideRemoved ?? true;
+      state.filters.hideEmptyEnv = parsed.hideEmptyEnv ?? false;
+    }
+  } catch (e) { /* ignore */ }
+
+  const hideRemovedEl = document.getElementById('filter-hide-removed');
+  const hideEmptyEnvEl = document.getElementById('filter-hide-empty-env');
+
+  if (hideRemovedEl) {
+    hideRemovedEl.checked = state.filters.hideRemoved;
+    hideRemovedEl.addEventListener('change', () => {
+      state.filters.hideRemoved = hideRemovedEl.checked;
+      saveFilters();
+      if (state.lastTopology) renderServiceCards(state.lastTopology, state.lastDeployments, state.lastMetrics);
+    });
+  }
+  if (hideEmptyEnvEl) {
+    hideEmptyEnvEl.checked = state.filters.hideEmptyEnv;
+    hideEmptyEnvEl.addEventListener('change', () => {
+      state.filters.hideEmptyEnv = hideEmptyEnvEl.checked;
+      saveFilters();
+      if (state.lastTopology) renderServiceCards(state.lastTopology, state.lastDeployments, state.lastMetrics);
+    });
+  }
+}
+
+function saveFilters() {
+  try {
+    localStorage.setItem('lcars:filters', JSON.stringify(state.filters));
+  } catch (e) { /* ignore */ }
 }
 
 // ─── Feature Indicators ──────────────────────────────────────────────────────
@@ -192,16 +240,35 @@ function renderServiceCards(topology, deployments, metrics) {
 
   const cards = [];
   for (const { node: project } of topology.projects.edges) {
-    for (const { node: service } of (project.services?.edges ?? [])) {
+    const projectServices = project.services?.edges ?? [];
+
+    // Filter: hide empty projects (no services)
+    if (state.filters.hideEmptyEnv && projectServices.length === 0) continue;
+
+    for (const { node: service } of projectServices) {
       const dep = deployments?.[service.id];
       const met = metrics?.[service.id];
       const status = dep?.status ?? 'UNKNOWN';
+
+      // Filter: hide REMOVED/inactive services
+      if (state.filters.hideRemoved && (status === 'REMOVED' || (!dep && status === 'UNKNOWN'))) {
+        // If there's no deployment record at all, skip. If explicitly REMOVED, skip.
+        if (status === 'REMOVED' || !dep) continue;
+      }
+
       const statusClass = status.toLowerCase();
       const lastDeploy = dep?.createdAt ? timeAgo(dep.createdAt) : '—';
       const deployUrl = dep?.url || dep?.staticUrl;
       const cpu = met?.cpu != null ? `${met.cpu.toFixed(3)} cores` : '—';
       const memMB = met?.memoryGB != null ? `${(met.memoryGB * 1024).toFixed(0)} MB` : '—';
       const netRx = met?.networkRxGB != null ? `${(met.networkRxGB * 1024).toFixed(1)} MB` : '—';
+      const railwayProjectUrl = `https://railway.app/project/${escHtml(project.id)}`;
+
+      // Commit info
+      const commitHash = dep?.meta?.commitHash ?? dep?.meta?.GIT_COMMIT_SHA ?? '';
+      const shortHash = commitHash ? commitHash.slice(0, 7) : '';
+      const commitMsg = dep?.meta?.commitMessage ?? dep?.meta?.GIT_COMMIT_MESSAGE ?? '';
+      const branch = dep?.meta?.branch ?? dep?.meta?.GIT_BRANCH ?? '';
 
       cards.push(`
         <div class="service-card status-${statusClass}">
@@ -209,17 +276,25 @@ function renderServiceCards(topology, deployments, metrics) {
           <div class="service-card-header">
             <span class="status-dot status-${statusClass}"></span>
             <span class="service-name">${escHtml(service.name.toUpperCase())}</span>
-            <span class="service-status">${status}</span>
+            <span class="service-status badge-${statusClass}">${status}</span>
           </div>
           <div class="service-card-body">
             <div class="metric-row">
               <span class="metric-label">PROJECT</span>
-              <span>${escHtml(project.name)}</span>
+              <span><a href="${railwayProjectUrl}" target="_blank" class="railway-link">${escHtml(project.name)}</a></span>
             </div>
             <div class="metric-row">
               <span class="metric-label">LAST DEPLOY</span>
               <span>${lastDeploy}</span>
             </div>
+            ${branch ? `<div class="metric-row">
+              <span class="metric-label">BRANCH</span>
+              <span style="color:var(--lcars-ice);font-size:11px">${escHtml(branch)}</span>
+            </div>` : ''}
+            ${commitMsg ? `<div class="metric-row">
+              <span class="metric-label">COMMIT</span>
+              <span class="commit-msg" title="${escHtml(commitMsg)}">${escHtml(shortHash ? shortHash + ' ' : '')}${escHtml(commitMsg.length > 40 ? commitMsg.slice(0, 40) + '…' : commitMsg)}</span>
+            </div>` : ''}
             <div class="metric-row">
               <span class="metric-label">CPU</span>
               <span>${cpu}</span>
@@ -236,13 +311,17 @@ function renderServiceCards(topology, deployments, metrics) {
               <span class="metric-label">URL</span>
               <span><a href="${escHtml(deployUrl)}" target="_blank" style="color:var(--lcars-ice)">${escHtml(deployUrl.replace(/^https?:\/\//, ''))}</a></span>
             </div>` : ''}
+            <div class="metric-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,136,0,0.1)">
+              <span class="metric-label">RAILWAY</span>
+              <a href="${railwayProjectUrl}" target="_blank" class="railway-link" style="font-size:10px">OPEN PROJECT ↗</a>
+            </div>
           </div>
         </div>
       `);
     }
   }
 
-  grid.innerHTML = cards.length ? cards.join('') : '<div class="loading-msg">NO SERVICES FOUND</div>';
+  grid.innerHTML = cards.length ? cards.join('') : '<div class="loading-msg">NO SERVICES FOUND (CHECK FILTERS)</div>';
 }
 
 // ─── Railway: Deploy Timeline ─────────────────────────────────────────────────
@@ -264,6 +343,7 @@ function renderDeployTimeline(deployments) {
         ...dep,
         serviceName: svcData.serviceName ?? serviceId,
         projectName: svcData.projectName ?? '',
+        projectId:   svcData.projectId ?? '',
       });
     }
   }
@@ -275,14 +355,27 @@ function renderDeployTimeline(deployments) {
     const status = dep.status ?? 'UNKNOWN';
     const statusClass = status.toLowerCase();
     const commitHash = dep.meta?.commitHash ?? dep.meta?.GIT_COMMIT_SHA ?? '';
-    const shortHash = commitHash ? commitHash.slice(0, 7) : '—';
+    const shortHash = commitHash ? commitHash.slice(0, 7) : '';
+    const commitMsg = dep.meta?.commitMessage ?? dep.meta?.GIT_COMMIT_MESSAGE ?? '';
+    const branch = dep.meta?.branch ?? dep.meta?.GIT_BRANCH ?? '';
+    const projectUrl = dep.projectId ? `https://railway.app/project/${escHtml(dep.projectId)}` : null;
+
+    const metaStr = [
+      shortHash,
+      branch ? `[${branch}]` : '',
+      commitMsg ? commitMsg.slice(0, 35) + (commitMsg.length > 35 ? '…' : '') : '',
+    ].filter(Boolean).join(' ');
+
     return `
       <div class="deploy-row status-${statusClass}">
         <span class="status-dot status-${statusClass}"></span>
         <span class="deploy-time">${timeAgo(dep.createdAt)}</span>
-        <span class="deploy-svc">${escHtml(dep.serviceName.toUpperCase())}</span>
-        <span class="deploy-meta">${shortHash}</span>
-        <span class="deploy-status">${status}</span>
+        <span class="deploy-svc-col">
+          ${projectUrl ? `<a href="${projectUrl}" target="_blank" class="railway-link deploy-project">${escHtml(dep.projectName)}</a>` : `<span class="deploy-project">${escHtml(dep.projectName)}</span>`}
+          <span class="deploy-svc">${escHtml(dep.serviceName.toUpperCase())}</span>
+        </span>
+        <span class="deploy-meta" title="${escHtml(commitMsg)}">${escHtml(metaStr || '—')}</span>
+        <span class="deploy-status badge-${statusClass}">${status}</span>
       </div>
     `;
   });
@@ -298,16 +391,22 @@ async function updateRailway() {
     fetchJSON('/railway/metrics'),
   ]);
 
+  // Cache for filter re-renders
+  state.lastTopology   = topology;
+  state.lastDeployments = deployments;
+  state.lastMetrics    = metrics;
+
   renderServiceCards(topology, deployments, metrics);
   renderDeployTimeline(deployments);
   updateQuickStats(topology, deployments, metrics);
 
-  // Check for crashed services
+  // Check for crashed/failed services — include project context
   clearAlerts();
   if (deployments) {
     for (const [id, svc] of Object.entries(deployments)) {
-      if (svc.status === 'CRASHED') addAlert(`${svc.serviceName ?? id}: CRASHED`, 'error');
-      if (svc.status === 'FAILED') addAlert(`${svc.serviceName ?? id}: DEPLOY FAILED`, 'warn');
+      const label = [svc.projectName, svc.serviceName ?? id].filter(Boolean).join(' / ');
+      if (svc.status === 'CRASHED') addAlert(`${label}: CRASHED`, 'error', svc.projectId);
+      if (svc.status === 'FAILED') addAlert(`${label}: DEPLOY FAILED`, 'warn', svc.projectId);
     }
   }
 
@@ -938,12 +1037,17 @@ function renderAlerts() {
   }
 
   if (none) none.style.display = 'none';
-  list.innerHTML = state.alerts.map(a => `
-    <div class="alert-item">
-      <span>⚠</span>
-      <span>${escHtml(a.msg)}</span>
-    </div>
-  `).join('');
+  list.innerHTML = state.alerts.map(a => {
+    const link = a.projectId
+      ? `<a href="https://railway.app/project/${escHtml(a.projectId)}" target="_blank" class="alert-link">↗</a>`
+      : '';
+    return `
+      <div class="alert-item">
+        <span>⚠</span>
+        <span>${escHtml(a.msg)}${link ? ' ' + link : ''}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 // ─── XSS safety ──────────────────────────────────────────────────────────────
@@ -960,6 +1064,7 @@ function escHtml(str) {
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
 async function init() {
   initNav();
+  initFilters();
   updateClock();
   setInterval(updateClock, 1000);
 

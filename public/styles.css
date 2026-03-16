@@ -392,8 +392,8 @@ html, body {
 
 .deploy-row {
   display: grid;
-  grid-template-columns: 10px 140px 1fr 80px;
-  gap: 12px;
+  grid-template-columns: 10px 80px 160px 1fr 80px;
+  gap: 10px;
   align-items: center;
   padding: 8px 12px;
   background: var(--lcars-dark-bg);
@@ -726,6 +726,134 @@ html, body {
   background: var(--lcars-gold);
 }
 
+/* ─── Filter Bar ────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  background: rgba(255,136,0,0.04);
+  border: 1px solid rgba(255,136,0,0.15);
+  border-radius: var(--lcars-radius-sm);
+  flex-wrap: wrap;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--lcars-text-dim);
+  letter-spacing: 0.15em;
+  flex-shrink: 0;
+}
+
+.filter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--lcars-text-dim);
+  letter-spacing: 0.08em;
+  transition: color 0.15s;
+}
+
+.filter-toggle:hover {
+  color: var(--lcars-orange);
+}
+
+.filter-toggle input[type="checkbox"] {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--lcars-text-dim);
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: border-color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.filter-toggle input[type="checkbox"]:checked {
+  background: var(--lcars-orange);
+  border-color: var(--lcars-orange);
+}
+
+.filter-toggle input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 0px;
+  width: 6px;
+  height: 9px;
+  border: 2px solid #000;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+/* ─── Railway Links ─────────────────────────────────── */
+.railway-link {
+  color: var(--lcars-ice);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.railway-link:hover {
+  color: var(--lcars-orange);
+  text-decoration: underline;
+}
+
+.alert-link {
+  color: var(--lcars-ice);
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.alert-link:hover {
+  color: var(--lcars-orange);
+}
+
+/* ─── Commit message in cards ───────────────────────── */
+.commit-msg {
+  font-size: 10px;
+  color: var(--lcars-text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+/* ─── Status Badges ─────────────────────────────────── */
+.badge-success   { color: var(--lcars-green) !important; }
+.badge-failed    { color: var(--lcars-red) !important; }
+.badge-crashed   { color: var(--lcars-mars) !important; }
+.badge-building  { color: var(--lcars-gold) !important; }
+.badge-deploying { color: var(--lcars-blue) !important; }
+.badge-removed   { color: var(--lcars-text-dim) !important; }
+.badge-unknown   { color: var(--lcars-text-dim) !important; }
+.badge-throttled { color: var(--lcars-tomato) !important; }
+
+/* ─── Deploy Row: enhanced layout ──────────────────── */
+.deploy-svc-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.deploy-project {
+  font-size: 10px;
+  color: var(--lcars-text-dim);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ─── Loading / Empty States ────────────────────────── */
 .loading-msg {
   color: var(--lcars-text-dim);
@@ -989,24 +1117,19 @@ html, body {
 
   /* ── Deploy timeline: collapse columns ── */
   .deploy-row {
-    grid-template-columns: 10px 1fr 60px;
+    grid-template-columns: 10px 1fr auto;
     gap: 8px;
     padding: 8px;
     font-size: 11px;
   }
 
-  /* Hide the verbose meta column, keep dot + service + status */
+  /* Hide verbose columns on mobile */
   .deploy-meta {
     display: none;
   }
 
   .deploy-time {
     display: none;
-  }
-
-  /* Re-layout remaining columns */
-  .deploy-row {
-    grid-template-columns: 10px 1fr auto;
   }
 
   /* ── Charts: full width, reasonable height ── */

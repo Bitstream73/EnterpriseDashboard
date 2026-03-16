@@ -23,7 +23,6 @@ router.get('/config', (req, res) => {
     features: {
       railway:   !!process.env.RAILWAY_API_TOKEN,
       anthropic: !!process.env.ANTHROPIC_ADMIN_API_KEY,
-      openai:    !!process.env.OPENAI_API_KEY,
       pinecone:  !!(process.env.PINECONE_API_KEY && process.env.PINECONE_INDEX_HOST),
     },
   });
@@ -93,73 +92,17 @@ router.get('/railway/history', (req, res) => {
 
 // ─── AI Usage ────────────────────────────────────────────────────────────────
 
-// Canonical paths
 router.get('/usage/anthropic', (req, res) => {
   res.json(get('usage:anthropic') ?? { available: false, reason: 'not yet polled', buckets: [] });
 });
 
-router.get('/usage/openai', (req, res) => {
-  res.json(get('usage:openai') ?? { available: false, reason: 'not yet polled', buckets: [] });
-});
-
 router.get('/usage/combined', (req, res) => {
   const anthropic = get('usage:anthropic') ?? { available: false, buckets: [] };
-  const openai    = get('usage:openai')    ?? { available: false, buckets: [] };
-  res.json({ anthropic, openai });
+  res.json({ anthropic });
 });
 
-// Alias paths (what the frontend was calling — kept for backwards compat)
 router.get('/anthropic/usage', (req, res) => {
   res.json(get('usage:anthropic') ?? { available: false, reason: 'not yet polled', buckets: [] });
-});
-
-router.get('/openai/usage', (req, res) => {
-  res.json(get('usage:openai') ?? { available: false, reason: 'not yet polled', buckets: [] });
-});
-
-// ─── OpenAI History (last N days from cached buckets) ────────────────────────
-
-router.get('/openai/history', (req, res) => {
-  const days = Math.min(30, Math.max(1, parseInt(req.query.days) || 7));
-  const data = get('usage:openai');
-
-  if (!data?.available) {
-    return res.json({
-      available: false,
-      reason: data?.reason ?? 'not yet polled',
-      days: [],
-    });
-  }
-
-  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
-
-  // Build ordered day slots
-  const byDay = {};
-  for (let i = 0; i < days; i++) {
-    const d   = new Date(Date.now() - i * 86400000);
-    const key = d.toISOString().slice(0, 10);
-    byDay[key] = { date: key, input_tokens: 0, output_tokens: 0, total_tokens: 0 };
-  }
-
-  for (const bucket of (data.buckets ?? [])) {
-    // OpenAI returns start_time as Unix seconds
-    const ts = (bucket.start_time ?? 0) * 1000;
-    if (ts < cutoff) continue;
-    const key = new Date(ts).toISOString().slice(0, 10);
-    if (!byDay[key]) continue;
-
-    const results = bucket.results ?? [bucket];
-    for (const r of results) {
-      const inp = r.input_tokens ?? 0;
-      const out = r.output_tokens ?? 0;
-      byDay[key].input_tokens  += inp;
-      byDay[key].output_tokens += out;
-      byDay[key].total_tokens  += inp + out;
-    }
-  }
-
-  const result = Object.values(byDay).sort((a, b) => a.date.localeCompare(b.date));
-  res.json({ available: true, days: result, fetchedAt: data.fetchedAt });
 });
 
 // ─── Pinecone ────────────────────────────────────────────────────────────────

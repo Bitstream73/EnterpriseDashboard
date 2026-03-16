@@ -1,7 +1,6 @@
 import cron from 'node-cron';
 import { pollTopology, pollDeployments, pollMetrics } from './railway.js';
 import { pollAnthropicUsage } from './anthropic.js';
-import { pollOpenAIUsage } from './openai.js';
 import { pollPineconeStats } from './pinecone.js';
 
 const POLL_RAILWAY_SEC  = parseInt(process.env.POLL_INTERVAL_RAILWAY_SECONDS)  || 60;
@@ -22,10 +21,7 @@ async function runRailwayPoll() {
 }
 
 async function runAIUsagePoll() {
-  await Promise.all([
-    pollAnthropicUsage(),
-    pollOpenAIUsage(),
-  ]);
+  await pollAnthropicUsage();
 }
 
 export async function startPollers() {

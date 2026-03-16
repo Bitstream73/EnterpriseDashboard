@@ -43,7 +43,6 @@ const state = {
   alerts: [],
   tokenChart: null,
   deployHistoryChart: null,
-  openaiHistoryChart: null,
   filters: {
     hideRemoved: true,
     hideEmptyEnv: false,
@@ -211,7 +210,6 @@ async function loadConfig() {
     const map = {
       'conn-railway':   state.features.railway,
       'conn-anthropic': state.features.anthropic,
-      'conn-openai':    state.features.openai,
       'conn-pinecone':  state.features.pinecone,
     };
     Object.entries(map).forEach(([id, on]) => {
@@ -497,31 +495,6 @@ function renderTokenChart(data) {
     });
   }
 
-  // OpenAI
-  if (data?.openai?.available && data.openai.buckets?.length) {
-    const buckets = data.openai.buckets;
-    const oaiData = labels.map(label => {
-      const bucket = buckets.find(b => {
-        const d = new Date((b.start_time ?? 0) * 1000);
-        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) === label;
-      });
-      if (!bucket) return 0;
-      const results = bucket.results ?? [bucket];
-      return results.reduce((sum, r) =>
-        sum + (r.input_tokens ?? 0) + (r.output_tokens ?? 0), 0);
-    });
-
-    datasets.push({
-      label: 'OPENAI TOKENS',
-      data: oaiData,
-      borderColor: COLORS.ice,
-      backgroundColor: 'rgba(153,204,255,0.06)',
-      fill: true,
-      tension: 0.3,
-      pointRadius: 2,
-    });
-  }
-
   if (datasets.length === 0) {
     // Show placeholder
     datasets.push({
@@ -640,50 +613,6 @@ function renderUsageSummary(data) {
           <div style="margin-top:8px;font-size:10px;color:var(--lcars-text-dim)">
             Requires Admin API key (org account)
           </div>` : ''}
-      </div>
-    `);
-  }
-
-  // OpenAI card
-  if (data?.openai?.available) {
-    const buckets = data.openai.buckets ?? [];
-    let totalTokens = 0;
-    for (const b of buckets) {
-      const results = b.results ?? [b];
-      for (const r of results) {
-        totalTokens += (r.input_tokens ?? 0) + (r.output_tokens ?? 0);
-      }
-    }
-    const costs = data.openai.costs ?? [];
-    let totalCost = costs.reduce((sum, c) => sum + (c.amount ?? 0), 0);
-
-    cards.push(`
-      <div class="usage-card">
-        <div class="usage-card-header">
-          <div class="usage-card-dot" style="background:${COLORS.ice}"></div>
-          <span class="usage-card-title">OPENAI</span>
-        </div>
-        <div class="usage-readout">
-          <div class="readout-row">
-            <span class="readout-label">TOKENS (30D)</span>
-            <span class="readout-small">${formatTokens(totalTokens)}</span>
-          </div>
-          ${totalCost > 0 ? `<div class="readout-row">
-            <span class="readout-label">COST (30D)</span>
-            <span class="readout-small">$${totalCost.toFixed(2)}</span>
-          </div>` : ''}
-        </div>
-      </div>
-    `);
-  } else {
-    const reason = data?.openai?.reason ?? 'Not configured';
-    cards.push(`
-      <div class="usage-card">
-        <div class="usage-card-header">
-          <div class="usage-card-dot" style="background:${COLORS.dim}"></div>
-          <span class="usage-card-title">OPENAI</span>
-        </div>
-        <div class="readout-unavail">${escHtml(reason)}</div>
       </div>
     `);
   }
@@ -861,114 +790,9 @@ function renderDeployHistoryChart(historyDays) {
   });
 }
 
-function renderOpenAIHistoryChart(historyData) {
-  const canvas = document.getElementById('openai-history-chart');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-
-  if (!historyData?.available) {
-    // Draw placeholder
-    if (state.openaiHistoryChart) state.openaiHistoryChart.destroy();
-    state.openaiHistoryChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: ['NO DATA'],
-        datasets: [{ label: historyData?.reason ?? 'NOT CONFIGURED', data: [0], borderColor: COLORS.dim }],
-      },
-      options: { responsive: true, maintainAspectRatio: false },
-    });
-    return;
-  }
-
-  const days   = historyData.days ?? [];
-  const labels = days.map(d => d.date.slice(5));
-
-  if (state.openaiHistoryChart) state.openaiHistoryChart.destroy();
-
-  state.openaiHistoryChart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'INPUT TOKENS',
-          data: days.map(d => d.input_tokens),
-          borderColor: COLORS.ice,
-          backgroundColor: 'rgba(153,204,255,0.08)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4,
-        },
-        {
-          label: 'OUTPUT TOKENS',
-          data: days.map(d => d.output_tokens),
-          borderColor: COLORS.violet,
-          backgroundColor: 'rgba(204,153,255,0.06)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          labels: { color: COLORS.sunflower, font: { family: 'Antonio', size: 11 }, padding: 16 },
-        },
-        tooltip: {
-          backgroundColor: '#111111',
-          borderColor: COLORS.ice,
-          borderWidth: 1,
-          titleColor: COLORS.sunflower,
-          bodyColor: COLORS.sunflower,
-          titleFont: { family: 'Antonio' },
-          bodyFont: { family: 'Antonio' },
-          callbacks: {
-            label: (ctx) => `${ctx.dataset.label}: ${formatTokens(ctx.raw)}`,
-          },
-        },
-      },
-      scales: {
-        x: {
-          ticks: { color: COLORS.dim, font: { family: 'Antonio', size: 10 } },
-          grid: { color: 'rgba(153,204,255,0.08)' },
-        },
-        y: {
-          ticks: {
-            color: COLORS.dim,
-            font: { family: 'Antonio', size: 10 },
-            callback: (v) => formatTokens(v),
-          },
-          grid: { color: 'rgba(153,204,255,0.08)' },
-        },
-      },
-    },
-  });
-}
-
 async function updateHistory() {
-  const [railwayHistory, openaiHistory] = await Promise.all([
-    fetchJSON('/railway/history?days=7'),
-    fetchJSON('/openai/history?days=7'),
-  ]);
-
-  // Show OpenAI status message if unavailable
-  const oaiMsg = document.getElementById('openai-history-msg');
-  if (oaiMsg) {
-    if (!openaiHistory?.available) {
-      const reason = openaiHistory?.reason ?? 'OpenAI usage data unavailable';
-      oaiMsg.textContent = reason.length > 120 ? reason.slice(0, 120) + '…' : reason;
-      oaiMsg.style.display = 'block';
-    } else {
-      oaiMsg.style.display = 'none';
-    }
-  }
-
+  const railwayHistory = await fetchJSON('/railway/history?days=7');
   if (railwayHistory) renderDeployHistoryChart(railwayHistory);
-  if (openaiHistory !== null) renderOpenAIHistoryChart(openaiHistory);
 
   const el = document.getElementById('history-last-updated');
   if (el) el.textContent = `UPDATED ${new Date().toLocaleTimeString()}`;

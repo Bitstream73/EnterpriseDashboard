@@ -154,8 +154,9 @@ function initNav() {
       btn.classList.add('active');
       const viewEl = document.getElementById(`view-${view}`);
       if (viewEl) viewEl.classList.add('active');
-      // Trigger history load when switching to history view
+      // Trigger data load when switching views
       if (view === 'history') updateHistory();
+      if (view === 'crew') updateCrewStatus();
     });
   });
 }
@@ -798,6 +799,70 @@ async function updateHistory() {
   if (el) el.textContent = `UPDATED ${new Date().toLocaleTimeString()}`;
 }
 
+// ─── Crew Status ──────────────────────────────────────────────────────────────
+
+const CREW_ACCENT = {
+  orange:      '#ff8800',
+  ice:         '#99ccff',
+  tomato:      '#ff5555',
+  violet:      '#cc99ff',
+  gold:        '#ffaa00',
+  green:       '#779933',
+};
+
+async function updateCrewStatus() {
+  const data = await fetchJSON('/crew/status');
+  const container = document.getElementById('crew-grid');
+  if (!container) return;
+
+  if (!data) {
+    container.innerHTML = '<div class="loading-msg">UNABLE TO REACH CREW STATUS ENDPOINT</div>';
+    return;
+  }
+
+  if (!data.available) {
+    container.innerHTML = `<div class="not-configured">${escHtml(data.reason ?? 'Crew status unavailable')}</div>`;
+    const el = document.getElementById('crew-last-updated');
+    if (el) el.textContent = `UPDATED ${new Date().toLocaleTimeString()}`;
+    return;
+  }
+
+  const cards = (data.members ?? []).map(member => {
+    const accent = CREW_ACCENT[member.accentColor] || CREW_ACCENT.orange;
+    const statusLabel = { ok: 'ACTIVE', stale: 'STALE', pending: 'NO DATA' }[member.status] ?? 'UNKNOWN';
+    const lastMsgTs = member.lastMessage?.timestamp
+      ? timeAgo(member.lastMessage.timestamp)
+      : null;
+
+    const msgBlock = member.lastMessage
+      ? `<div class="crew-card-last-msg">
+          <div class="crew-card-msg-meta">LAST REPORT &nbsp;·&nbsp; ${escHtml(lastMsgTs ?? '—')}</div>
+          <div class="crew-card-msg-content">${escHtml(member.lastMessage.content || '(no content)')}</div>
+        </div>`
+      : `<div class="crew-card-no-activity">NO RECENT ACTIVITY FOUND</div>`;
+
+    return `
+      <div class="crew-card">
+        <div class="crew-card-stripe" style="background:${accent}"></div>
+        <div class="crew-card-header">
+          <span class="crew-card-name">${escHtml(member.name)}</span>
+          <span class="crew-status-badge ${member.status}">${statusLabel}</span>
+        </div>
+        <div class="crew-card-body">
+          <div class="crew-card-role">${escHtml(member.role)}</div>
+          <div class="crew-card-schedule">⏱ ${escHtml(member.schedule)}</div>
+          ${msgBlock}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = cards.length ? cards.join('') : '<div class="loading-msg">NO CREW MEMBERS CONFIGURED</div>';
+
+  const el = document.getElementById('crew-last-updated');
+  if (el) el.textContent = `UPDATED ${new Date().toLocaleTimeString()}`;
+}
+
 // ─── System View ──────────────────────────────────────────────────────────────
 async function updateSystem() {
   const container = document.getElementById('system-info');
@@ -913,14 +978,16 @@ async function init() {
     updatePinecone(),
     updateSystem(),
     updateHistory(),
+    updateCrewStatus(),
   ]);
 
   // Periodic polling
-  setInterval(updateRailway,   POLL_RAILWAY_MS);
-  setInterval(updateAIUsage,   POLL_AI_USAGE_MS);
-  setInterval(updatePinecone,  POLL_PINECONE_MS);
-  setInterval(updateSystem,    60_000);
-  setInterval(updateHistory,   POLL_AI_USAGE_MS); // same cadence as AI usage (5 min)
+  setInterval(updateRailway,     POLL_RAILWAY_MS);
+  setInterval(updateAIUsage,     POLL_AI_USAGE_MS);
+  setInterval(updatePinecone,    POLL_PINECONE_MS);
+  setInterval(updateSystem,      60_000);
+  setInterval(updateHistory,     POLL_AI_USAGE_MS); // same cadence as AI usage (5 min)
+  setInterval(updateCrewStatus,  POLL_AI_USAGE_MS); // 5 min
 
   console.log('[lcars] Dashboard online. Stardate:', getStardate());
 }

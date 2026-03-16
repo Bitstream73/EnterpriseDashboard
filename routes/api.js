@@ -110,3 +110,9 @@ router.get('/anthropic/usage', (req, res) => {
 router.get('/pinecone/stats', (req, res) => {
   res.json(get('pinecone:stats') ?? { available: false, reason: 'not yet polled' });
 });
+
+// ─── Crew Status ─────────────────────────────────────────────────────────────
+
+router.get('/crew/status', (req, res) => {
+  res.json(get('crew:status') ?? { available: false, reason: 'not yet polled', members: [] });
+});

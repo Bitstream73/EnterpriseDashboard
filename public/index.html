@@ -43,6 +43,9 @@
           <button class="nav-btn" data-view="system">
             <span>SYSTEM</span>
           </button>
+          <button class="nav-btn" data-view="crew">
+            <span>CREW</span>
+          </button>
           <div class="nav-spacer"></div>
           <div class="nav-indicator">
             <div class="indicator-block active" id="conn-railway" title="Railway"></div>
@@ -130,6 +133,18 @@
           <canvas id="deploy-history-chart"></canvas>
         </div>
 
+      </section>
+
+      <!-- CREW STATUS VIEW -->
+      <section id="view-crew" class="view">
+        <div class="panel-header">
+          <div class="panel-cap violet"></div>
+          <h2 class="panel-title">CREW STATUS — AUTOMATED OPERATIONS</h2>
+          <span class="panel-meta" id="crew-last-updated">—</span>
+        </div>
+        <div id="crew-grid" class="crew-grid">
+          <div class="loading-msg">SCANNING CREW STATUS...</div>
+        </div>
       </section>
 
       <!-- SYSTEM VIEW -->

@@ -10,11 +10,9 @@
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.55.1",
+    "better-sqlite3": "^9.4.3",
     "express": "^4.21.0",
     "node-cron": "^3.0.3"
-  },
-  "optionalDependencies": {
-    "better-sqlite3": "^9.4.3"
   },
   "engines": {
     "node": ">=20.0.0"

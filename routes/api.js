@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { get } from '../cache/store.js';
+import { insertActivity, getActivities } from '../lib/activity-db.js';
 
 export const router = Router();
 
@@ -115,4 +116,47 @@ router.get('/pinecone/stats', (req, res) => {
 
 router.get('/crew/status', (req, res) => {
   res.json(get('crew:status') ?? { available: false, reason: 'not yet polled', members: [] });
+});
+
+// ─── Crew Activity Log ───────────────────────────────────────────────────────
+
+/**
+ * POST /api/crew/activity
+ * Body: { agent, event, message, task? }
+ * Agents post status updates here. No auth required.
+ */
+router.post('/crew/activity', (req, res) => {
+  const { agent, event, message, task } = req.body || {};
+
+  if (!agent || !message) {
+    return res.status(400).json({ error: 'agent and message are required' });
+  }
+
+  try {
+    const { id, timestamp } = insertActivity({ agent, event, message, task });
+    res.status(201).json({ ok: true, id, timestamp });
+  } catch (err) {
+    if (err.message.includes('Invalid event')) {
+      return res.status(400).json({ error: err.message });
+    }
+    console.error('[api/crew/activity] insert error:', err);
+    res.status(500).json({ error: 'Failed to store activity' });
+  }
+});
+
+/**
+ * GET /api/crew/activity
+ * Query params: limit (default 100, max 500), agent (filter by agent id)
+ * Returns last N activity entries, newest first.
+ */
+router.get('/crew/activity', (req, res) => {
+  const { limit, agent } = req.query;
+
+  try {
+    const activities = getActivities({ limit, agent });
+    res.json({ activities, count: activities.length });
+  } catch (err) {
+    console.error('[api/crew/activity] query error:', err);
+    res.status(500).json({ error: 'Failed to retrieve activity' });
+  }
 });

@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-03-16T12:46:18.813Z",
+  "viewports": {
+    "mobile": {
+      "consoleErrors": [],
+      "cardCount": 3,
+      "badgeCount": 3,
+      "cardNames": [
+        "DR. CRUSHER",
+        "WORF",
+        "VALUE DISCOVERY"
+      ],
+      "crewGridColumns": "366px"
+    },
+    "tablet": {
+      "consoleErrors": [],
+      "cardCount": 3,
+      "badgeCount": 3,
+      "cardNames": [
+        "DR. CRUSHER",
+        "WORF",
+        "VALUE DISCOVERY"
+      ],
+      "crewGridColumns": "284px 284px"
+    },
+    "desktop": {
+      "consoleErrors": [],
+      "cardCount": 3,
+      "badgeCount": 3,
+      "cardNames": [
+        "DR. CRUSHER",
+        "WORF",
+        "VALUE DISCOVERY"
+      ],
+      "crewGridColumns": "280px 280px 280px"
+    }
+  },
+  "consoleErrors": [],
+  "findings": []
+}

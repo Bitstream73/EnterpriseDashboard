@@ -13,33 +13,14 @@ import { set } from '../cache/store.js';
 // ─── Crew Roster ─────────────────────────────────────────────────────────────
 // channelId = Discord channel where this crew member posts their reports
 const CREW_MEMBERS = [
-  {
-    id: 'crusher',
-    name: 'DR. CRUSHER',
-    role: 'Medical Officer — Deployment Health',
-    schedule: 'Daily 08:00 ET',
-    scheduleHourET: 8,
-    channelId: '1482839839706579025',
-    accentColor: 'ice',
-  },
-  {
-    id: 'worf',
-    name: 'WORF',
-    role: 'Security Officer — Vulnerability Sweep',
-    schedule: 'Daily 09:00 ET',
-    scheduleHourET: 9,
-    channelId: '1482839624417022042',
-    accentColor: 'tomato',
-  },
-  {
-    id: 'value-discovery',
-    name: 'VALUE DISCOVERY',
-    role: 'Nightly Analysis — Proposal Generation',
-    schedule: 'Daily 02:00 ET',
-    scheduleHourET: 2,
-    channelId: '1482847561269121187', // posts to Riker's channel
-    accentColor: 'violet',
-  },
+  { id: 'riker',   name: 'RIKER',       role: 'First Officer — Orchestrator',          schedule: 'Always on',        channelId: '1482847561269121187', accentColor: 'gold' },
+  { id: 'data',    name: 'DATA',        role: 'Software Engineer — Implementation',    schedule: 'On demand',        channelId: '1482743295577821184', accentColor: 'ice' },
+  { id: 'geordi',  name: 'GEORDI',      role: 'QA Engineer — Testing',                 schedule: 'On demand',        channelId: '1482743254037434450', accentColor: 'green' },
+  { id: 'worf',    name: 'WORF',        role: 'Security Officer — Vulnerability Sweep',schedule: 'Daily 09:00 ET', scheduleHourET: 9, channelId: '1482839624417022042', accentColor: 'tomato' },
+  { id: 'crusher', name: 'DR. CRUSHER', role: 'Medical Officer — Deployment Health',   schedule: 'Daily 08:00 ET', scheduleHourET: 8, channelId: '1482839839706579025', accentColor: 'ice' },
+  { id: 'keiko',   name: 'KEIKO',       role: 'Frontend QA — UI/UX Testing',           schedule: 'On demand',        channelId: '1482839906811252958', accentColor: 'green' },
+  { id: 'barclay', name: 'BARCLAY',     role: 'Research — Requirements & Design',      schedule: 'On demand',        channelId: '1482839990001074216', accentColor: 'violet' },
+  { id: 'troi',    name: 'TROI',        role: 'Business Strategist — Validation',      schedule: 'On demand',        channelId: '1483448859555397712', accentColor: 'violet' },
 ];
 
 const DISCORD_API = 'https://discord.com/api/v10';

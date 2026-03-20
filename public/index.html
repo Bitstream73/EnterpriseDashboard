@@ -147,6 +147,47 @@
         </div>
       </section>
 
+      <!-- PROJECT DETAIL VIEW -->
+      <section id="view-project-detail" class="view">
+        <div class="panel-header">
+          <div class="panel-cap gold"></div>
+          <h2 class="panel-title" id="project-detail-title">PROJECT DETAIL</h2>
+          <button class="detail-back-btn" id="detail-back-btn" onclick="navigateBack()">← BACK</button>
+        </div>
+
+        <!-- Service status cards row -->
+        <div id="project-detail-services" class="services-grid"></div>
+
+        <!-- Metrics panels -->
+        <div id="project-detail-metrics" class="project-detail-metrics-row"></div>
+
+        <!-- Deployment logs per service -->
+        <div id="project-detail-logs"></div>
+
+        <!-- Deployment history -->
+        <div class="panel-header sub">
+          <div class="panel-cap butterscotch"></div>
+          <h2 class="panel-title">DEPLOYMENT HISTORY</h2>
+        </div>
+        <div id="project-detail-deploys" class="deploy-timeline"></div>
+
+        <!-- Tasks panel -->
+        <div class="panel-header sub">
+          <div class="panel-cap violet"></div>
+          <h2 class="panel-title">TASKS</h2>
+        </div>
+        <div id="project-detail-tasks" class="project-detail-tasks">
+          <div class="not-configured">TASK FILTERING NOT YET WIRED — NO TASKS.JSON DATA SOURCE CONFIGURED</div>
+        </div>
+
+        <!-- GitHub commits panel -->
+        <div class="panel-header sub">
+          <div class="panel-cap blue"></div>
+          <h2 class="panel-title">RECENT COMMITS</h2>
+        </div>
+        <div id="project-detail-commits" class="project-detail-commits"></div>
+      </section>
+
       <!-- SYSTEM VIEW -->
       <section id="view-system" class="view">
         <div class="panel-header">

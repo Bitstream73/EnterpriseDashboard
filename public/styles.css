@@ -1334,3 +1334,149 @@ html, body {
     width: 100%;
   }
 }
+
+/* ─── Project Detail View ────────────────────────────────────────────────── */
+
+.detail-back-btn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--lcars-orange);
+  color: var(--lcars-orange);
+  font-family: var(--lcars-font);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  padding: 4px 14px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  text-transform: uppercase;
+  align-self: center;
+}
+
+.detail-back-btn:hover {
+  background: var(--lcars-orange);
+  color: #000;
+}
+
+.project-detail-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.detail-metric-card {
+  background: rgba(255, 136, 0, 0.04);
+  border: 1px solid rgba(255, 136, 0, 0.15);
+  border-radius: 4px;
+  padding: 14px 16px;
+}
+
+.detail-metric-card-title {
+  font-family: var(--lcars-font);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--lcars-orange);
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 136, 0, 0.12);
+  padding-bottom: 6px;
+}
+
+.project-detail-logs {
+  margin-bottom: 24px;
+}
+
+.deploy-log-panel {
+  margin-bottom: 16px;
+}
+
+.deploy-log-title {
+  font-family: var(--lcars-font);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--lcars-gold);
+  margin-bottom: 8px;
+}
+
+.deploy-log-lines {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 170, 0, 0.15);
+  border-radius: 3px;
+  padding: 10px 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--lcars-text-secondary);
+  max-height: 240px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.deploy-log-line-ts {
+  color: var(--lcars-text-dim);
+  margin-right: 8px;
+  user-select: none;
+}
+
+.project-detail-tasks {
+  margin-bottom: 24px;
+  padding: 8px 0;
+}
+
+.project-detail-commits {
+  margin-bottom: 24px;
+}
+
+.commit-row {
+  display: grid;
+  grid-template-columns: 70px 1fr 120px 100px;
+  gap: 8px;
+  align-items: start;
+  padding: 8px 10px;
+  border-left: 2px solid rgba(255, 136, 0, 0.2);
+  margin-bottom: 4px;
+  font-size: 12px;
+  background: rgba(255, 136, 0, 0.02);
+}
+
+.commit-row:hover {
+  background: rgba(255, 136, 0, 0.06);
+  border-left-color: var(--lcars-orange);
+}
+
+.commit-sha {
+  font-family: 'Courier New', monospace;
+  color: var(--lcars-ice);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+
+.commit-message {
+  color: var(--lcars-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.commit-author {
+  color: var(--lcars-text-dim);
+  font-size: 11px;
+  text-align: right;
+}
+
+.commit-time {
+  color: var(--lcars-text-dim);
+  font-size: 11px;
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .commit-row {
+    grid-template-columns: 60px 1fr;
+    grid-template-rows: auto auto;
+  }
+  .commit-author, .commit-time {
+    display: none;
+  }
+}

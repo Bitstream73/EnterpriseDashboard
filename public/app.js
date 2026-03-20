@@ -145,6 +145,32 @@ function updateClock() {
 }
 
 // ─── Navigation ──────────────────────────────────────────────────────────────
+
+// Track the previous view so the back button returns correctly
+state.previousView = 'railway';
+
+function switchView(viewId) {
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const viewEl = document.getElementById(`view-${viewId}`);
+  if (viewEl) viewEl.classList.add('active');
+  const navBtn = document.querySelector(`.nav-btn[data-view="${viewId}"]`);
+  if (navBtn) navBtn.classList.add('active');
+}
+
+function navigateBack() {
+  switchView(state.previousView || 'railway');
+}
+
+function navigateToProjectDetail(projectId, projectName) {
+  state.previousView = (() => {
+    const active = document.querySelector('.nav-btn.active');
+    return active ? active.dataset.view : 'railway';
+  })();
+  switchView('project-detail');
+  loadProjectDetail(projectId, projectName);
+}
+
 function initNav() {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -313,6 +339,12 @@ function renderServiceCards(topology, deployments, metrics) {
             <div class="metric-row" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,136,0,0.1)">
               <span class="metric-label">RAILWAY</span>
               <a href="${railwayProjectUrl}" target="_blank" class="railway-link" style="font-size:10px">OPEN PROJECT ↗</a>
+            </div>
+            <div class="metric-row" style="margin-top:8px">
+              <button class="detail-back-btn" style="margin:0;font-size:10px;padding:3px 10px"
+                onclick="navigateToProjectDetail('${escHtml(project.id)}', '${escHtml(project.name)}')">
+                VIEW DETAILS
+              </button>
             </div>
           </div>
         </div>
@@ -960,6 +992,218 @@ function escHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+// ─── Project Detail View ─────────────────────────────────────────────────────
+
+async function loadProjectDetail(projectId, projectName) {
+  const titleEl = document.getElementById('project-detail-title');
+  if (titleEl) titleEl.textContent = `PROJECT — ${(projectName || '').toUpperCase()}`;
+
+  // Set loading state
+  const serviceEl  = document.getElementById('project-detail-services');
+  const metricsEl  = document.getElementById('project-detail-metrics');
+  const logsEl     = document.getElementById('project-detail-logs');
+  const deploysEl  = document.getElementById('project-detail-deploys');
+  const commitsEl  = document.getElementById('project-detail-commits');
+
+  if (serviceEl)  serviceEl.innerHTML  = '<div class="loading-msg">SCANNING SERVICES…</div>';
+  if (metricsEl)  metricsEl.innerHTML  = '';
+  if (logsEl)     logsEl.innerHTML     = '<div class="loading-msg">RETRIEVING DEPLOYMENT LOGS…</div>';
+  if (deploysEl)  deploysEl.innerHTML  = '<div class="loading-msg">LOADING DEPLOY HISTORY…</div>';
+  if (commitsEl)  commitsEl.innerHTML  = '<div class="loading-msg">CHECKING COMMIT HISTORY…</div>';
+
+  const data = await fetchJSON(`/project-detail/${encodeURIComponent(projectId)}`);
+
+  if (!data) {
+    if (serviceEl) serviceEl.innerHTML = '<div class="error-msg">FAILED TO LOAD PROJECT DETAIL</div>';
+    return;
+  }
+
+  renderProjectServices(data, serviceEl, metricsEl);
+  renderProjectLogs(data, logsEl);
+  renderProjectDeploys(data, deploysEl);
+  renderProjectCommits(data, commitsEl);
+}
+
+function renderProjectServices(data, serviceEl, metricsEl) {
+  if (!serviceEl) return;
+  const services = data.services ?? [];
+
+  if (!services.length) {
+    serviceEl.innerHTML = '<div class="loading-msg">NO SERVICES FOUND FOR THIS PROJECT</div>';
+    return;
+  }
+
+  // Service status cards
+  const cards = services.map(svc => {
+    const status = svc.status ?? 'UNKNOWN';
+    const statusClass = status.toLowerCase();
+    const lastDeploy = svc.lastDeploy ? timeAgo(svc.lastDeploy) : '—';
+    const deployUrl = svc.deployUrl;
+    const shortHash = svc.commitHash ? svc.commitHash.slice(0, 7) : '';
+    const commitMsg = svc.commitMsg ?? '';
+
+    return `
+      <div class="service-card status-${statusClass}">
+        <div class="service-card-top-stripe"></div>
+        <div class="service-card-header">
+          <span class="status-dot status-${statusClass}"></span>
+          <span class="service-name">${escHtml(svc.name.toUpperCase())}</span>
+          <span class="service-status badge-${statusClass}">${status}</span>
+        </div>
+        <div class="service-card-body">
+          <div class="metric-row">
+            <span class="metric-label">LAST DEPLOY</span>
+            <span>${lastDeploy}</span>
+          </div>
+          ${svc.branch ? `<div class="metric-row">
+            <span class="metric-label">BRANCH</span>
+            <span style="color:var(--lcars-ice);font-size:11px">${escHtml(svc.branch)}</span>
+          </div>` : ''}
+          ${commitMsg ? `<div class="metric-row">
+            <span class="metric-label">COMMIT</span>
+            <span class="commit-msg" title="${escHtml(commitMsg)}">${escHtml(shortHash ? shortHash + ' ' : '')}${escHtml(commitMsg.length > 45 ? commitMsg.slice(0, 45) + '…' : commitMsg)}</span>
+          </div>` : ''}
+          ${svc.githubRepo ? `<div class="metric-row">
+            <span class="metric-label">REPO</span>
+            <span style="font-size:11px;color:var(--lcars-text-dim)">${escHtml(svc.githubRepo)}</span>
+          </div>` : ''}
+          ${deployUrl ? `<div class="metric-row">
+            <span class="metric-label">URL</span>
+            <span><a href="${escHtml(deployUrl)}" target="_blank" style="color:var(--lcars-ice);font-size:11px">${escHtml(deployUrl.replace(/^https?:\/\//, ''))}</a></span>
+          </div>` : ''}
+        </div>
+      </div>
+    `;
+  });
+  serviceEl.innerHTML = cards.join('');
+
+  // Metrics cards
+  if (!metricsEl) return;
+  const metricCards = services
+    .filter(svc => svc.metrics)
+    .map(svc => {
+      const m = svc.metrics;
+      const cpu    = m.cpu    != null ? `${m.cpu.toFixed(3)} cores`          : '—';
+      const mem    = m.memoryGB   != null ? `${(m.memoryGB * 1024).toFixed(0)} MB`    : '—';
+      const netRx  = m.networkRx  != null ? `${(m.networkRx * 1024).toFixed(1)} MB`   : '—';
+      const netTx  = m.networkTx  != null ? `${(m.networkTx * 1024).toFixed(1)} MB`   : '—';
+      const disk   = m.diskGB     != null ? `${(m.diskGB * 1024).toFixed(0)} MB`      : '—';
+
+      return `
+        <div class="detail-metric-card">
+          <div class="detail-metric-card-title">${escHtml(svc.name.toUpperCase())} — RESOURCES</div>
+          <div class="metric-row">
+            <span class="metric-label">CPU</span>
+            <span>${cpu}</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">MEMORY</span>
+            <span>${mem}</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">NET RX</span>
+            <span>${netRx}</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">NET TX</span>
+            <span>${netTx}</span>
+          </div>
+          <div class="metric-row">
+            <span class="metric-label">DISK</span>
+            <span>${disk}</span>
+          </div>
+        </div>
+      `;
+    });
+
+  metricsEl.innerHTML = metricCards.length
+    ? metricCards.join('')
+    : '<div class="loading-msg" style="grid-column:1/-1">NO RESOURCE METRICS AVAILABLE (DEPLOYMENT NOT RUNNING OR METRICS NOT YET POLLED)</div>';
+}
+
+function renderProjectLogs(data, logsEl) {
+  if (!logsEl) return;
+  const services = data.services ?? [];
+  const logs = data.logs ?? {};
+
+  const panels = services.map(svc => {
+    const lines = logs[svc.id] ?? [];
+    const content = lines.length
+      ? lines.map(l =>
+          `<span class="deploy-log-line-ts">${escHtml(l.ts)}</span>${escHtml(l.message)}`
+        ).join('\n')
+      : '<span style="color:var(--lcars-text-dim)">NO LOG DATA AVAILABLE FOR THIS DEPLOYMENT</span>';
+
+    return `
+      <div class="deploy-log-panel">
+        <div class="deploy-log-title">DEPLOYMENT LOG — ${escHtml(svc.name.toUpperCase())}</div>
+        <div class="deploy-log-lines">${content}</div>
+      </div>
+    `;
+  });
+
+  logsEl.innerHTML = panels.length ? panels.join('') : '<div class="loading-msg">NO SERVICES WITH LOGS</div>';
+}
+
+function renderProjectDeploys(data, deploysEl) {
+  if (!deploysEl) return;
+  const services = data.services ?? [];
+
+  const allDeploys = [];
+  for (const svc of services) {
+    for (const dep of (svc.recentDeploys ?? [])) {
+      allDeploys.push({ ...dep, serviceName: svc.name });
+    }
+  }
+  allDeploys.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  if (!allDeploys.length) {
+    deploysEl.innerHTML = '<div class="loading-msg">NO DEPLOY HISTORY</div>';
+    return;
+  }
+
+  const rows = allDeploys.slice(0, 30).map(dep => {
+    const status = dep.status ?? 'UNKNOWN';
+    const statusClass = status.toLowerCase();
+    const commitHash = dep.meta?.commitHash ?? dep.meta?.GIT_COMMIT_SHA ?? '';
+    const shortHash = commitHash ? commitHash.slice(0, 7) : '';
+    const commitMsg = dep.meta?.commitMessage ?? dep.meta?.GIT_COMMIT_MESSAGE ?? '';
+    const branch = dep.meta?.branch ?? dep.meta?.GIT_BRANCH ?? '';
+
+    const metaStr = [
+      shortHash,
+      branch ? `[${branch}]` : '',
+      commitMsg ? commitMsg.slice(0, 40) + (commitMsg.length > 40 ? '…' : '') : '',
+    ].filter(Boolean).join(' ');
+
+    return `
+      <div class="deploy-row status-${statusClass}">
+        <span class="status-dot status-${statusClass}"></span>
+        <span class="deploy-time">${timeAgo(dep.createdAt)}</span>
+        <span class="deploy-svc-col">
+          <span class="deploy-svc">${escHtml((dep.serviceName || '').toUpperCase())}</span>
+        </span>
+        <span class="deploy-meta" title="${escHtml(commitMsg)}">${escHtml(metaStr || '—')}</span>
+        <span class="deploy-status badge-${statusClass}">${status}</span>
+      </div>
+    `;
+  });
+
+  deploysEl.innerHTML = rows.join('');
+}
+
+function renderProjectCommits(data, commitsEl) {
+  if (!commitsEl) return;
+
+  if (!data.githubAvailable) {
+    commitsEl.innerHTML = `<div class="not-configured">${escHtml(data.githubNote ?? 'GITHUB COMMITS UNAVAILABLE')}</div>`;
+    return;
+  }
+
+  // Future: render commit rows when GitHub token support is added
+  commitsEl.innerHTML = '<div class="loading-msg">NO COMMIT DATA</div>';
 }
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { get } from '../cache/store.js';
 import { insertActivity, getActivities } from '../lib/activity-db.js';
+import { createRailwayClient } from '../lib/railway-client.js';
 
 export const router = Router();
 
@@ -116,6 +117,105 @@ router.get('/pinecone/stats', (req, res) => {
 
 router.get('/crew/status', (req, res) => {
   res.json(get('crew:status') ?? { available: false, reason: 'not yet polled', members: [] });
+});
+
+// ─── Project Detail ──────────────────────────────────────────────────────────
+
+/**
+ * GET /api/project-detail/:projectId
+ * Returns Railway metrics (from cache), latest deployment logs (live from Railway API),
+ * and recent deployments for a specific project.
+ * GitHub commits are intentionally omitted — all repos are private.
+ */
+router.get('/project-detail/:projectId', async (req, res) => {
+  const { projectId } = req.params;
+
+  // ── Find project in cached topology ──────────────────────────────────────
+  const topology = get('railway:topology') ?? { projects: { edges: [] } };
+  const projectEdge = topology.projects?.edges?.find(e => e.node.id === projectId);
+
+  if (!projectEdge) {
+    return res.status(404).json({ error: 'Project not found in topology cache. Cache may not be ready yet.' });
+  }
+
+  const project = projectEdge.node;
+  const services = project.services?.edges?.map(e => e.node) ?? [];
+  const envId = project.environments?.edges?.[0]?.node?.id ?? null;
+
+  // ── Gather cached metrics and deployments for all services ───────────────
+  const deploymentCache = get('railway:deployments') ?? {};
+  const metricsCache    = get('railway:metrics') ?? {};
+
+  const serviceDetails = services.map(svc => {
+    const dep = deploymentCache[svc.id] ?? null;
+    const met = metricsCache[svc.id] ?? null;
+    return {
+      id:          svc.id,
+      name:        svc.name,
+      status:      dep?.status ?? 'UNKNOWN',
+      lastDeploy:  dep?.createdAt ?? null,
+      deployUrl:   dep?.url ?? dep?.staticUrl ?? null,
+      commitHash:  dep?.meta?.commitHash ?? null,
+      commitMsg:   dep?.meta?.commitMessage ?? null,
+      branch:      dep?.meta?.branch ?? null,
+      githubRepo:  dep?.meta?.repo ?? null,
+      recentDeploys: (dep?.recentDeploys ?? []).slice(0, 20),
+      metrics: met ? {
+        cpu:       met.cpu,
+        memoryGB:  met.memoryGB,
+        networkRx: met.networkRxGB,
+        networkTx: met.networkTxGB,
+        diskGB:    met.diskGB,
+      } : null,
+      latestDeploymentId: dep?.id ?? null,
+    };
+  });
+
+  // ── Fetch deployment logs for the most recent deployment (live) ───────────
+  const token = process.env.RAILWAY_API_TOKEN;
+  const logsPerService = {};
+
+  if (token && envId) {
+    const client = createRailwayClient(token);
+    await Promise.allSettled(
+      serviceDetails.map(async svc => {
+        if (!svc.latestDeploymentId) return;
+        try {
+          const GQL = `query { deploymentLogs(deploymentId: "${svc.latestDeploymentId}") { message timestamp } }`;
+          const resp = await fetch('https://backboard.railway.com/graphql/v2', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ query: GQL }),
+          });
+          if (!resp.ok) return;
+          const json = await resp.json();
+          const logs = json?.data?.deploymentLogs ?? [];
+          // Return last 30 lines
+          logsPerService[svc.id] = logs.slice(-30).map(l => ({
+            ts:      l.timestamp ? l.timestamp.slice(0, 19).replace('T', ' ') : '',
+            message: l.message ?? '',
+          }));
+        } catch {
+          // Non-fatal — log fetch failure
+        }
+      })
+    );
+  }
+
+  res.json({
+    project: {
+      id:   project.id,
+      name: project.name,
+    },
+    services: serviceDetails,
+    logs: logsPerService,
+    // GitHub commits not available — repos are private and no GitHub token is configured
+    githubAvailable: false,
+    githubNote: 'GitHub commit history unavailable — repositories are private.',
+  });
 });
 
 // ─── Crew Activity Log ───────────────────────────────────────────────────────

@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import { get } from '../cache/store.js';
 import { insertActivity, getActivities } from '../lib/activity-db.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import { createRailwayClient } from '../lib/railway-client.js';
 
 export const router = Router();
@@ -259,4 +264,107 @@ router.get('/crew/activity', (req, res) => {
     console.error('[api/crew/activity] query error:', err);
     res.status(500).json({ error: 'Failed to retrieve activity' });
   }
+});
+
+// ─── Docs ─────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/docs
+ * Lists files in the /docs directory at project root (if present).
+ * Returns { files: [{ name, size, modified }] }
+ */
+router.get('/docs', (req, res) => {
+  const docsDir = path.join(__dirname, '..', 'docs');
+  if (!fs.existsSync(docsDir)) {
+    return res.json({ files: [] });
+  }
+
+  try {
+    const entries = fs.readdirSync(docsDir);
+    const files = entries
+      .filter(name => !name.startsWith('.'))
+      .map(name => {
+        const fpath = path.join(docsDir, name);
+        let stat;
+        try { stat = fs.statSync(fpath); } catch { return null; }
+        if (!stat.isFile()) return null;
+        const kb = (stat.size / 1024).toFixed(1);
+        return {
+          name,
+          size:     `${kb} KB`,
+          modified: stat.mtime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase(),
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    res.json({ files });
+  } catch (err) {
+    console.error('[api/docs] error:', err);
+    res.status(500).json({ files: [], error: err.message });
+  }
+});
+
+// ─── Cron Schedule ────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/crons
+ * Returns cron jobs from the cache (populated by the OpenClaw gateway if configured)
+ * or a static list from the node-cron pollers.
+ */
+router.get('/crons', (req, res) => {
+  // Check cache first (if an external source populates this)
+  const cached = get('crons:jobs');
+  if (cached) return res.json({ jobs: cached });
+
+  // Fall back: describe the built-in pollers
+  const POLL_RAILWAY_SEC  = parseInt(process.env.POLL_INTERVAL_RAILWAY_SECONDS)  || 60;
+  const POLL_AI_SEC       = parseInt(process.env.POLL_INTERVAL_AI_USAGE_SECONDS) || 300;
+  const POLL_PINECONE_SEC = parseInt(process.env.POLL_INTERVAL_PINECONE_SECONDS) || 600;
+
+  const jobs = [
+    {
+      id:          'railway-poller',
+      name:        'Railway Topology + Deployments',
+      schedule:    `Every ${POLL_RAILWAY_SEC}s`,
+      description: 'Polls Railway GraphQL API for project topology, deployment status, and metrics.',
+      enabled:     true,
+    },
+    {
+      id:          'ai-usage-poller',
+      name:        'AI Usage (Anthropic)',
+      schedule:    `Every ${POLL_AI_SEC}s`,
+      description: 'Fetches Anthropic Admin API token usage and cost data for the past 30 days.',
+      enabled:     !!process.env.ANTHROPIC_ADMIN_API_KEY,
+    },
+    {
+      id:          'pinecone-poller',
+      name:        'Pinecone Index Stats',
+      schedule:    `Every ${POLL_PINECONE_SEC}s`,
+      description: 'Fetches Pinecone vector index statistics, namespace counts, and fullness.',
+      enabled:     !!(process.env.PINECONE_API_KEY && process.env.PINECONE_INDEX_HOST),
+    },
+    {
+      id:          'crew-poller',
+      name:        'Crew Status',
+      schedule:    `Every ${POLL_AI_SEC}s`,
+      description: 'Checks OpenClaw crew agent session activity and last message timestamps.',
+      enabled:     true,
+    },
+  ];
+
+  res.json({ jobs });
+});
+
+// ─── Investments ──────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/investments
+ * Returns investment proposals from cache (populated externally).
+ * Returns empty list if none loaded.
+ */
+router.get('/investments', (req, res) => {
+  const cached = get('investments:proposals');
+  if (cached) return res.json({ proposals: cached });
+  res.json({ proposals: [] });
 });

@@ -91,6 +91,20 @@ html, body {
   height: 80px;
   background: var(--lcars-orange);
   border-radius: var(--lcars-radius-cap) 0 0 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* LCARS scoop — black inner-corner cutout */
+.lcars-corner.top-left::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 60px;
+  height: 50px;
+  background: var(--lcars-black);
+  border-radius: var(--lcars-radius-cap) 0 0 0;
 }
 
 .sidebar-header-bar {
@@ -117,18 +131,19 @@ html, body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 16px 8px;
+  padding: 16px 0 16px 0;
   gap: 6px;
   overflow-y: auto;
 }
 
+/* ── LCARS stagger bars — decorative colored block left of each nav btn ── */
 .nav-btn {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
-  padding: 8px 12px;
+  padding: 0;
   background: transparent;
   border: none;
-  border-radius: var(--lcars-radius-cap) var(--lcars-radius-sm) var(--lcars-radius-sm) var(--lcars-radius-cap);
   color: var(--lcars-text-dim);
   font-family: 'Antonio', sans-serif;
   font-size: 13px;
@@ -136,25 +151,57 @@ html, body {
   text-transform: uppercase;
   text-align: left;
   cursor: pointer;
+  transition: color 0.15s;
+  border-radius: 0;
+  position: relative;
+}
+
+/* Stagger bar — the colored left block */
+.nav-btn::before {
+  content: '';
+  display: block;
+  flex-shrink: 0;
+  width: 14px;
+  height: 32px;
+  border-radius: var(--lcars-radius-cap) 0 0 var(--lcars-radius-cap);
+  background: var(--lcars-orange);
+  margin-right: 8px;
+  transition: background 0.15s, width 0.15s;
+  opacity: 0.55;
+}
+
+/* Label portion */
+.nav-btn span {
+  flex: 1;
+  padding: 6px 8px 6px 0;
+  border-radius: 0 var(--lcars-radius-sm) var(--lcars-radius-sm) 0;
   transition: background 0.15s, color 0.15s;
 }
 
-.nav-btn:hover {
-  background: rgba(255, 136, 0, 0.15);
-  color: var(--lcars-orange);
-}
+.nav-btn:hover::before { opacity: 0.85; }
+.nav-btn:hover span    { background: rgba(255, 136, 0, 0.12); color: var(--lcars-orange); }
 
-.nav-btn.active {
-  background: var(--lcars-orange);
-  color: #000;
-  font-weight: 700;
-}
+.nav-btn.active::before { opacity: 1; width: 18px; }
+.nav-btn.active span    { background: var(--lcars-orange); color: #000; font-weight: 700; }
 
-.nav-btn:nth-child(2) { border-color: var(--lcars-butterscotch); }
-.nav-btn:nth-child(2).active { background: var(--lcars-butterscotch); }
-.nav-btn:nth-child(3) { }
-.nav-btn:nth-child(3).active { background: var(--lcars-gold); }
-.nav-btn:nth-child(4).active { background: var(--lcars-violet); color: #000; }
+/* Per-button LCARS color variation */
+.nav-btn:nth-child(1)::before { background: var(--lcars-orange); }
+.nav-btn:nth-child(1).active span { background: var(--lcars-orange); }
+
+.nav-btn:nth-child(2)::before { background: var(--lcars-butterscotch); }
+.nav-btn:nth-child(2).active span { background: var(--lcars-butterscotch); color: #000; }
+
+.nav-btn:nth-child(3)::before { background: var(--lcars-gold); }
+.nav-btn:nth-child(3).active span { background: var(--lcars-gold); color: #000; }
+
+.nav-btn:nth-child(4)::before { background: var(--lcars-violet); }
+.nav-btn:nth-child(4).active span { background: var(--lcars-violet); color: #000; }
+
+.nav-btn:nth-child(5)::before { background: var(--lcars-ice); }
+.nav-btn:nth-child(5).active span { background: var(--lcars-ice); color: #000; }
+
+.nav-btn:nth-child(6)::before { background: var(--lcars-almond); }
+.nav-btn:nth-child(6).active span { background: var(--lcars-almond); color: #000; }
 
 .nav-spacer {
   flex: 1;
@@ -202,6 +249,20 @@ html, body {
   width: 80px;
   height: 80px;
   background: var(--lcars-butterscotch);
+  border-radius: 0 0 0 var(--lcars-radius-cap);
+  position: relative;
+  overflow: hidden;
+}
+
+/* LCARS scoop — black inner-corner cutout */
+.lcars-corner.bottom-left::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 60px;
+  height: 50px;
+  background: var(--lcars-black);
   border-radius: 0 0 0 var(--lcars-radius-cap);
 }
 
@@ -1024,8 +1085,8 @@ html, body {
   display: none;
 }
 
-/* ─── Mobile / Portrait Phone (430px and below) ─────── */
-@media (max-width: 430px) {
+/* ─── Mobile / Tablet (768px and below — portrait phone + portrait tablet) ── */
+@media (max-width: 768px) {
   /* Mobile LCARS header — decorative top strip */
   .mobile-lcars-header {
     display: flex;
@@ -1116,22 +1177,43 @@ html, body {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Show nav labels again on mobile */
-  .nav-btn span {
-    display: inline;
-  }
-
+  /* Mobile nav: reset stagger-bar styles for horizontal pill layout */
   .nav-btn {
     flex-shrink: 0;
-    padding: 10px 16px;
-    min-height: 44px; /* Touch target */
+    padding: 0;
+    min-height: 44px;
     font-size: 12px;
-    border-radius: var(--lcars-radius-cap);
+    border-radius: 22px;
     text-align: center;
     white-space: nowrap;
-    /* Left-cap style reset for horizontal */
-    border-radius: 22px;
+    background: rgba(255,136,0,0.08);
   }
+
+  /* Hide the stagger bar pseudo-element in mobile horizontal nav */
+  .nav-btn::before {
+    display: none;
+  }
+
+  .nav-btn span {
+    display: inline;
+    padding: 10px 16px;
+    border-radius: 22px;
+    background: transparent;
+    color: var(--lcars-text-dim);
+  }
+
+  .nav-btn.active span,
+  .nav-btn:nth-child(n).active span {
+    background: var(--lcars-orange);
+    color: #000;
+  }
+
+  /* Override per-button color on active for mobile — all use orange for clarity */
+  .nav-btn:nth-child(2).active span { background: var(--lcars-butterscotch); }
+  .nav-btn:nth-child(3).active span { background: var(--lcars-gold); }
+  .nav-btn:nth-child(4).active span { background: var(--lcars-violet); }
+  .nav-btn:nth-child(5).active span { background: var(--lcars-ice); }
+  .nav-btn:nth-child(6).active span { background: var(--lcars-almond); }
 
   /* Hide indicator blocks in sidebar on mobile */
   .nav-spacer,
@@ -1286,6 +1368,13 @@ html, body {
     gap: 12px;
   }
 
+  /* ── Docs / Calendar / Investments: single column ── */
+  .calendar-grid,
+  .investments-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
   /* ── Global font size bump for readability ── */
   body {
     font-size: 15px;
@@ -1308,8 +1397,8 @@ html, body {
   }
 }
 
-/* ─── Extra-small phones (320px) ─────────────────────── */
-@media (max-width: 350px) {
+/* ─── Extra-small phones ─────────────────────────────── */
+@media (max-width: 380px) {
   .panel-title {
     font-size: 11px;
     letter-spacing: 0.06em;
@@ -1333,6 +1422,206 @@ html, body {
     min-width: unset;
     width: 100%;
   }
+}
+
+/* ─── Docs View ──────────────────────────────────────── */
+.docs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doc-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--lcars-dark-bg);
+  border: 1px solid rgba(255, 170, 0, 0.2);
+  border-left: 4px solid var(--lcars-gold);
+  border-radius: var(--lcars-radius-sm);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  text-decoration: none;
+}
+
+.doc-item:hover {
+  background: rgba(255, 170, 0, 0.06);
+  border-color: var(--lcars-gold);
+}
+
+.doc-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.doc-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.doc-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--lcars-sunflower);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.doc-meta {
+  font-size: 11px;
+  color: var(--lcars-text-dim);
+  letter-spacing: 0.06em;
+  margin-top: 3px;
+}
+
+.doc-size {
+  font-size: 11px;
+  color: var(--lcars-text-dim);
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+/* ─── Calendar View ──────────────────────────────────── */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.cron-card {
+  background: var(--lcars-dark-bg);
+  border: 1px solid rgba(255, 153, 102, 0.25);
+  border-top: 3px solid var(--lcars-butterscotch);
+  border-radius: var(--lcars-radius-sm);
+  padding: 14px 16px;
+}
+
+.cron-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--lcars-butterscotch);
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.cron-card-schedule {
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: var(--lcars-gold);
+  background: rgba(255, 170, 0, 0.08);
+  padding: 4px 8px;
+  border-radius: 2px;
+  margin-bottom: 10px;
+  word-break: break-all;
+}
+
+.cron-card-desc {
+  font-size: 11px;
+  color: var(--lcars-text-dim);
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+}
+
+.cron-next {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--lcars-ice);
+  letter-spacing: 0.06em;
+}
+
+.cron-enabled-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 2px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.cron-enabled-badge.on  { background: rgba(119,153,51,0.25); color: var(--lcars-green); border: 1px solid var(--lcars-green); }
+.cron-enabled-badge.off { background: rgba(102,102,136,0.2); color: var(--lcars-text-dim); border: 1px solid var(--lcars-text-dim); }
+
+/* ─── Investments View ───────────────────────────────── */
+.investments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.invest-card {
+  background: var(--lcars-dark-bg);
+  border: 1px solid rgba(204, 153, 255, 0.25);
+  border-top: 3px solid var(--lcars-violet);
+  border-radius: var(--lcars-radius-sm);
+  overflow: hidden;
+}
+
+.invest-card-header {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid rgba(204, 153, 255, 0.1);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.invest-card-ticker {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--lcars-violet);
+  flex-shrink: 0;
+}
+
+.invest-card-name {
+  font-size: 11px;
+  color: var(--lcars-text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.invest-card-badge {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.invest-card-badge.buy    { background: rgba(119,153,51,0.25); color: var(--lcars-green); border: 1px solid var(--lcars-green); }
+.invest-card-badge.watch  { background: rgba(255,170,0,0.2); color: var(--lcars-gold); border: 1px solid var(--lcars-gold); }
+.invest-card-badge.hold   { background: rgba(153,204,255,0.15); color: var(--lcars-ice); border: 1px solid var(--lcars-ice); }
+.invest-card-badge.sell   { background: rgba(204,68,68,0.2); color: var(--lcars-red); border: 1px solid var(--lcars-red); }
+
+.invest-card-body {
+  padding: 12px 16px;
+}
+
+.invest-source {
+  font-size: 10px;
+  color: var(--lcars-text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.invest-thesis {
+  font-size: 12px;
+  color: var(--lcars-text-secondary);
+  line-height: 1.5;
+  margin-bottom: 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* ─── Project Detail View ────────────────────────────────────────────────── */

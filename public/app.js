@@ -181,8 +181,11 @@ function initNav() {
       const viewEl = document.getElementById(`view-${view}`);
       if (viewEl) viewEl.classList.add('active');
       // Trigger data load when switching views
-      if (view === 'history') updateHistory();
-      if (view === 'crew') updateCrewStatus();
+      if (view === 'history')     updateHistory();
+      if (view === 'crew')        updateCrewStatus();
+      if (view === 'docs')        updateDocs();
+      if (view === 'calendar')    updateCalendar();
+      if (view === 'investments') updateInvestments();
     });
   });
 }
@@ -1204,6 +1207,121 @@ function renderProjectCommits(data, commitsEl) {
 
   // Future: render commit rows when GitHub token support is added
   commitsEl.innerHTML = '<div class="loading-msg">NO COMMIT DATA</div>';
+}
+
+// ─── Docs View ────────────────────────────────────────────────────────────────
+async function updateDocs() {
+  const container = document.getElementById('docs-list');
+  if (!container) return;
+
+  const data = await fetchJSON('/docs');
+  const el = document.getElementById('docs-last-updated');
+  if (el) el.textContent = `UPDATED ${new Date().toLocaleTimeString()}`;
+
+  if (!data || !data.files || data.files.length === 0) {
+    container.innerHTML = '<div class="not-configured">NO DOCUMENTS FOUND</div>';
+    return;
+  }
+
+  const extIcon = (name) => {
+    if (name.endsWith('.md'))   return '📄';
+    if (name.endsWith('.json')) return '📋';
+    if (name.endsWith('.txt'))  return '📝';
+    if (name.endsWith('.pdf'))  return '📕';
+    return '📁';
+  };
+
+  const rows = data.files.map(f => `
+    <div class="doc-item">
+      <span class="doc-icon">${extIcon(f.name)}</span>
+      <div class="doc-info">
+        <div class="doc-name">${escHtml(f.name)}</div>
+        <div class="doc-meta">${escHtml(f.modified || '—')}</div>
+      </div>
+      <span class="doc-size">${escHtml(f.size || '')}</span>
+    </div>
+  `);
+
+  container.innerHTML = rows.join('');
+}
+
+// ─── Calendar View ────────────────────────────────────────────────────────────
+async function updateCalendar() {
+  const container = document.getElementById('calendar-grid');
+  if (!container) return;
+
+  const data = await fetchJSON('/crons');
+  const el = document.getElementById('calendar-last-updated');
+  if (el) el.textContent = `UPDATED ${new Date().toLocaleTimeString()}`;
+
+  if (!data || !data.jobs || data.jobs.length === 0) {
+    container.innerHTML = '<div class="not-configured">NO CRON JOBS CONFIGURED</div>';
+    return;
+  }
+
+  const cards = data.jobs.map(job => {
+    const enabled = job.enabled !== false;
+    const name    = job.name || job.id || 'UNNAMED JOB';
+    const sched   = job.schedule || job.cron || '—';
+    const desc    = job.description || job.payload?.text || '—';
+    const next    = job.nextRun ? `NEXT: ${new Date(job.nextRun).toLocaleString()}` : '';
+
+    return `
+      <div class="cron-card">
+        <div class="cron-card-name">${escHtml(name.toUpperCase())}</div>
+        <span class="cron-enabled-badge ${enabled ? 'on' : 'off'}">${enabled ? 'ACTIVE' : 'DISABLED'}</span>
+        <div class="cron-card-schedule">${escHtml(sched)}</div>
+        ${desc !== '—' ? `<div class="cron-card-desc">${escHtml(desc)}</div>` : ''}
+        ${next ? `<div class="cron-next">⏱ ${escHtml(next)}</div>` : ''}
+      </div>
+    `;
+  });
+
+  container.innerHTML = cards.join('');
+}
+
+// ─── Investments View ─────────────────────────────────────────────────────────
+async function updateInvestments() {
+  const container = document.getElementById('investments-grid');
+  if (!container) return;
+
+  const data = await fetchJSON('/investments');
+  const el = document.getElementById('investments-last-updated');
+  if (el) el.textContent = `UPDATED ${new Date().toLocaleTimeString()}`;
+
+  if (!data || !data.proposals || data.proposals.length === 0) {
+    container.innerHTML = '<div class="not-configured">NO INVESTMENT PROPOSALS LOADED<br><span style="font-size:11px;margin-top:8px;display:block;color:var(--lcars-text-dim)">Connect a data source to populate proposals.</span></div>';
+    return;
+  }
+
+  const badgeClass = (action) => {
+    const a = (action || '').toLowerCase();
+    if (a.includes('buy'))   return 'buy';
+    if (a.includes('sell'))  return 'sell';
+    if (a.includes('hold'))  return 'hold';
+    return 'watch';
+  };
+
+  const cards = data.proposals.map(p => `
+    <div class="invest-card">
+      <div class="invest-card-header">
+        <div>
+          <div class="invest-card-ticker">${escHtml(p.ticker || p.symbol || '—')}</div>
+          <div class="invest-card-name">${escHtml(p.name || '')}</div>
+        </div>
+        <span class="invest-card-badge ${badgeClass(p.action)}">${escHtml((p.action || 'WATCH').toUpperCase())}</span>
+      </div>
+      <div class="invest-card-body">
+        ${p.source ? `<div class="invest-source">SOURCE: ${escHtml(p.source)}</div>` : ''}
+        ${p.thesis ? `<div class="invest-thesis">${escHtml(p.thesis)}</div>` : ''}
+        ${p.price  ? `<div class="metric-row"><span class="metric-label">PRICE</span><span>${escHtml(String(p.price))}</span></div>` : ''}
+        ${p.target ? `<div class="metric-row"><span class="metric-label">TARGET</span><span style="color:var(--lcars-green)">${escHtml(String(p.target))}</span></div>` : ''}
+        ${p.risk   ? `<div class="metric-row"><span class="metric-label">RISK</span><span style="color:var(--lcars-gold)">${escHtml(p.risk)}</span></div>` : ''}
+      </div>
+    </div>
+  `);
+
+  container.innerHTML = cards.join('');
 }
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────

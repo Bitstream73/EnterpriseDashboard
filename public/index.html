@@ -46,6 +46,15 @@
           <button class="nav-btn" data-view="crew">
             <span>CREW</span>
           </button>
+          <button class="nav-btn" data-view="docs">
+            <span>DOCS</span>
+          </button>
+          <button class="nav-btn" data-view="calendar">
+            <span>CALENDAR</span>
+          </button>
+          <button class="nav-btn" data-view="investments">
+            <span>INVEST</span>
+          </button>
           <div class="nav-spacer"></div>
           <div class="nav-indicator">
             <div class="indicator-block active" id="conn-railway" title="Railway"></div>
@@ -195,6 +204,42 @@
           <h2 class="panel-title">SYSTEM STATUS</h2>
         </div>
         <div id="system-info" class="system-info"></div>
+      </section>
+
+      <!-- DOCS VIEW -->
+      <section id="view-docs" class="view">
+        <div class="panel-header">
+          <div class="panel-cap gold"></div>
+          <h2 class="panel-title">DOCUMENTS &amp; REPORTS</h2>
+          <span class="panel-meta" id="docs-last-updated">—</span>
+        </div>
+        <div id="docs-list" class="docs-list">
+          <div class="loading-msg">SCANNING DOCUMENT STORE...</div>
+        </div>
+      </section>
+
+      <!-- CALENDAR VIEW -->
+      <section id="view-calendar" class="view">
+        <div class="panel-header">
+          <div class="panel-cap butterscotch"></div>
+          <h2 class="panel-title">SCHEDULE — ACTIVE CRONS</h2>
+          <span class="panel-meta" id="calendar-last-updated">—</span>
+        </div>
+        <div id="calendar-grid" class="calendar-grid">
+          <div class="loading-msg">LOADING SCHEDULE DATA...</div>
+        </div>
+      </section>
+
+      <!-- INVESTMENTS VIEW -->
+      <section id="view-investments" class="view">
+        <div class="panel-header">
+          <div class="panel-cap violet"></div>
+          <h2 class="panel-title">INVESTMENT PROPOSALS</h2>
+          <span class="panel-meta" id="investments-last-updated">—</span>
+        </div>
+        <div id="investments-grid" class="investments-grid">
+          <div class="loading-msg">LOADING PROPOSALS...</div>
+        </div>
       </section>
 
     </main>

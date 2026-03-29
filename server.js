@@ -1,4 +1,6 @@
 import express from 'express';
+import helmet from 'helmet';
+import { rateLimit } from 'express-rate-limit';
 import { router as apiRouter } from './routes/api.js';
 import { startPollers, stopPollers } from './pollers/index.js';
 import path from 'path';
@@ -8,6 +10,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 const TITLE = process.env.DASHBOARD_TITLE || 'ENTERPRISE OPS CENTER';
+
+// Security headers
+app.use(helmet());
+
+// Rate limit API endpoints: 100 requests per 15 minutes per IP
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests — slow down.' },
+});
+app.use('/api', apiLimiter);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
